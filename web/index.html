@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>UIE mapa</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <main id="view" aria-label="3D pohled na terén">
+    <div class="zoom-buttons" role="group" aria-label="Přiblížení mapy">
+      <button id="zoom-in" class="btn" type="button" aria-label="Přiblížit" title="Přiblížit" disabled>+</button>
+      <button id="zoom-out" class="btn" type="button" aria-label="Oddálit" title="Oddálit" disabled>−</button>
+    </div>
+    <div id="fly-crosshair" class="fly-crosshair" aria-hidden="true" hidden></div>
+    <section id="fly-overlay" class="fly-overlay" aria-label="Létání" hidden>
+      <p id="fly-overlay-title" class="fly-overlay-title">Létání (bez kolizí)</p>
+      <p id="fly-overlay-message" role="status">Klikněte na tlačítko nebo do mapy a ovládejte pohled myší.</p>
+      <div class="fly-overlay-actions">
+        <button id="fly-overlay-start" class="btn btn-accent" type="button">Spustit / pokračovat v létání</button>
+        <button id="fly-overlay-map" class="btn" type="button">Zpět na mapu</button>
+        <button id="fly-center" class="btn" type="button">Přesunout nad střed pohledu</button>
+        <button id="fly-drag" class="btn" type="button">Použít tažení myší</button>
+      </div>
+    </section>
+    <section id="pick" class="pick" aria-live="polite" aria-label="Vybraný blok" hidden>
+      <div class="pick-head">
+        <h2>Vybraný blok</h2>
+        <button id="pick-close" class="pick-close" type="button" aria-label="Zavřít detail bloku">×</button>
+      </div>
+      <p id="pick-coords" class="pick-coords num">–</p>
+      <dl id="pick-facts" class="facts" hidden>
+        <dt>Blok</dt><dd id="pick-name"></dd>
+        <dt>ID</dt><dd id="pick-id"></dd>
+        <dt>Metadata</dt><dd id="pick-meta"></dd>
+      </dl>
+      <p id="pick-msg" class="note" hidden></p>
+      <p class="pick-hint">Výběr podle geometrie: průhledné pixely (např. listí) se nerozlišují a u přesahujících modových tvarů může jít o sousední buňku.</p>
+    </section>
+  </main>
+
+  <div id="sample-flag" class="sample-flag" hidden>Vzorek</div>
+  <button id="panel-toggle" class="panel-toggle" type="button" aria-controls="panel" aria-expanded="true">Skrýt panel</button>
+
+  <aside id="panel" class="panel">
+    <header class="panel-head">
+      <p class="eyebrow">UIE · Minecraft 1.7.10</p>
+      <h1 id="title">UIE mapa</h1>
+      <p id="sample-badge" class="badge" hidden>Vzorek – nejde o celý svět</p>
+    </header>
+
+    <section id="status" class="status" data-state="loading" role="status" aria-live="polite">
+      <p class="status-kicker">Načítání v prohlížeči</p>
+      <div class="status-line"><span class="dot" aria-hidden="true"></span><span id="status-text">Spouštím prohlížeč…</span></div>
+      <div id="progress" class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden>
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+      <div id="status-detail" class="status-detail" hidden></div>
+      <button id="retry-chunks" class="btn" type="button" hidden>Zkusit chybějící znovu</button>
+    </section>
+
+    <section id="render" class="block" aria-labelledby="render-heading">
+      <h2 id="render-heading">Aktualizace mapy</h2>
+      <h3 class="note" style="margin: 0 0 6px; font-weight: 600;">Povrch celého světa</h3>
+      <dl class="facts">
+        <dt>Stav</dt><dd id="hires-state" data-tone="muted" aria-live="polite">Zjišťuji…</dd>
+        <dt id="hires-progress-label" hidden>Tento běh</dt><dd id="hires-progress" hidden></dd>
+        <dt id="hires-eta-label" hidden>Zbývá</dt><dd id="hires-eta" hidden></dd>
+        <dt id="hires-started-label" hidden>Spuštěno</dt><dd id="hires-started" hidden></dd>
+        <dt id="hires-finished-label" hidden>Dokončeno</dt><dd id="hires-finished" hidden></dd>
+      </dl>
+      <p id="hires-message" class="note" hidden></p>
+      <h3 class="note" style="margin: 14px 0 6px; font-weight: 600;">Hrubý přehled celého světa</h3>
+      <dl class="facts">
+        <dt>Stav</dt><dd id="overview-state" data-tone="muted" aria-live="polite">Zjišťuji…</dd>
+        <dt id="overview-stage-label" hidden>Fáze</dt><dd id="overview-stage" hidden></dd>
+        <dt id="overview-finished-label" hidden>Poslední běh</dt><dd id="overview-finished" hidden></dd>
+        <dt id="overview-published-label" hidden>Zveřejněno</dt><dd id="overview-published" hidden></dd>
+        <dt id="overview-counts-label" hidden>Regiony v běhu</dt><dd id="overview-counts" hidden></dd>
+      </dl>
+      <p id="overview-message" class="note"></p>
+      <h3 class="note" style="margin: 14px 0 6px; font-weight: 600;">Detail okolí spawnu</h3>
+      <dl class="facts">
+        <dt>Data detailu vytvořena</dt><dd id="generated">–</dd>
+        <dt>Render detailu</dt><dd id="render-state" data-tone="muted" aria-live="polite">Zjišťuji…</dd>
+        <dt id="render-progress-label" hidden>Průběh</dt><dd id="render-progress" hidden></dd>
+        <dt id="render-eta-label" hidden>Zbývá</dt><dd id="render-eta" hidden></dd>
+        <dt id="render-published-label" hidden>Poslední úspěšné zveřejnění</dt><dd id="render-published" hidden></dd>
+        <dt id="render-heartbeat-label" hidden>Stav hlášen</dt><dd id="render-heartbeat" hidden></dd>
+      </dl>
+      <div id="render-bar" class="progress render-bar" role="progressbar" aria-label="Průběh renderu na serveru"
+        aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><div id="render-bar-fill" class="progress-bar"></div></div>
+      <p id="render-message" class="note" hidden></p>
+    </section>
+
+    <section class="block">
+      <h2>Načtená mapa</h2>
+      <dl class="facts">
+        <dt>Detail spawnu</dt><dd id="bounds">–</dd>
+        <dt>Chunky v okolí</dt><dd id="chunks">–</dd>
+        <dt>Trojúhelníky v okolí</dt><dd id="triangles">–</dd>
+        <dt>Geometrie v paměti</dt><dd id="geometry-memory" title="Účet geometrie detailu a světa; každý má samostatný limit 500 MiB. Nejde o celkovou paměť prohlížeče.">–</dd>
+      </dl>
+      <p id="sample-note" class="note note-sample" hidden>Zobrazen je pouze vzorek vybrané oblasti, ne celý svět. Prázdná místa mimo vzorek nejsou chybou mapy.</p>
+    </section>
+
+    <section class="block">
+      <h2>Pokrytí bloků detailu spawnu</h2>
+      <p class="note">Počty níže platí pro export detailu spawnu, nikoli pro celý svět.</p>
+      <dl class="facts">
+        <dt>Vykresleno</dt><dd id="cov-rendered">–</dd>
+        <dt>Nepodporováno</dt><dd id="cov-unsupported">–</dd>
+        <dt id="cov-empty-label" title="Bloky, pro které renderer nevrátil žádné plochy" hidden>Bez geometrie</dt><dd id="cov-empty" hidden>–</dd>
+      </dl>
+      <p id="cov-empty-note" class="note warn" hidden>U těchto bloků renderer nevytvořil plochy. Může jít o zakryté kapaliny i chybějící podporu modů.</p>
+      <details id="cov-names" class="names" hidden>
+        <summary>Seznam nepodporovaných bloků</summary>
+        <ul id="cov-list"></ul>
+        <button type="button" id="cov-find" title="Prohledá bloková data načtených chunků">Najít na mapě</button>
+        <p id="cov-find-msg" class="note" hidden></p>
+        <ul id="cov-hits" class="hits"></ul>
+      </details>
+    </section>
+
+    <section class="block">
+      <h2>Diagnostika bloků světa</h2>
+      <details id="world-diagnostics">
+        <summary>Problémové modely a textury</summary>
+        <p class="note">ID, metadata a příklady výskytu. Diagnostika se doplňuje postupně; dosud nezkontrolované regiony nejsou bezchybné automaticky.</p>
+        <button id="world-diagnostics-load" type="button" class="btn">Načíst / obnovit seznam</button>
+        <p id="world-diagnostics-message" class="note" role="status"></p>
+        <div id="world-diagnostics-body" class="note"></div>
+      </details>
+    </section>
+
+    <section class="block">
+      <h2>Navigace</h2>
+      <div class="mode-switch" role="group" aria-label="Režim pohledu">
+        <button id="mode-orbit" class="btn mode-btn" type="button" aria-pressed="true">Mapa</button>
+        <button id="mode-fly" class="btn mode-btn" type="button" aria-pressed="false" disabled>Létání / chůze</button>
+      </div>
+      <p id="collision-preparation-progress" class="note" role="status" hidden></p>
+      <div id="fly-panel" class="fly-panel" hidden>
+        <button id="fly-start" class="btn btn-accent" type="button">Spustit / pokračovat v létání</button>
+        <button id="fly-walk" class="btn" type="button" aria-pressed="false">Chůze s kolizemi (G)</button>
+        <p id="fly-message" class="note" role="status" hidden></p>
+        <dl class="facts">
+          <dt>Kamera</dt><dd id="fly-position" class="num">–</dd>
+          <dt>Rychlost</dt><dd id="fly-speed">–</dd>
+        </dl>
+        <p id="fly-help" class="note">Myš otáčí pohledem · WASD nebo šipky pohyb · Mezerník nebo E nahoru · Q dolů · Shift zrychlení · G chůze · Esc pozastaví a uvolní myš. Bez kolizí a gravitace: kamera prochází terénem. Terén se načítá kolem kamery.</p>
+        <p id="walk-help" class="note" hidden>Chůze: WASD pohyb · Mezerník skok / plavání · Shift běh · G létání. Dostupná bloková data kolizí se načítají automaticky, jinde používáme přibližnou geometrii mapy. Tvary některých modů jsou přibližné. V jeskynním řezu plavání vyžaduje zapnuté uzávěry řezu a načtená podzemní data. Při neznámém terénu může chůze čekat.</p>
+        <p id="fly-touch-note" class="note warn" hidden>Létání potřebuje myš a klávesnici. Na dotykovém zařízení použijte režim Mapa.</p>
+      </div>
+      <form id="goto" class="goto" novalidate>
+        <label>X <input id="goto-x" type="number" inputmode="numeric" step="1" autocomplete="off" disabled></label>
+        <label>Z <input id="goto-z" type="number" inputmode="numeric" step="1" autocomplete="off" disabled></label>
+        <button id="goto-submit" type="submit" class="btn btn-accent" disabled>Přesunout</button>
+      </form>
+      <p id="goto-msg" class="note" hidden></p>
+      <div class="row">
+        <button id="reset" type="button" class="btn" disabled>Resetovat kameru</button>
+        <span class="muted">Střed: <span id="target" class="num">–</span></span>
+      </div>
+      <p class="note">WASD nebo šipky posouvají mapu. Vzdálenost od středu pohledu: <span id="zoom-distance" class="num">–</span>.</p>
+    </section>
+
+    <section class="block">
+      <h2>Zobrazení</h2>
+      <label class="distance-label" for="view-distance">Načítané okolí</label>
+      <select id="view-distance" disabled>
+        <option value="auto">Automaticky podle přiblížení</option>
+        <option value="1">Malé · 3 × 3 chunky</option>
+        <option value="2">Střední · 5 × 5 chunků</option>
+        <option value="4">Velké · 9 × 9 chunků</option>
+      </select>
+      <p class="note">Načítá se okolí kamery, vzdálenější terén se uvolňuje z paměti. Detail spawnu a povrch světa mají každý limit geometrie 500 MiB; další paměť potřebují textury a prohlížeč. Dál je hrubá mapa.</p>
+      <label class="check"><input id="opt-fog" type="checkbox" checked> Mlha</label>
+      <label class="check"><input id="opt-double" type="checkbox"> Oboustranné plochy <span class="muted">(ladění)</span></label>
+      <label class="check"><input id="opt-overview" type="checkbox" checked disabled> Přehled celého světa</label>
+      <p id="overview-note" class="note" hidden>Hrubá výšková mapa celého světa (1 bod = 1 až mnoho bloků podle oddálení) pod detailním vzorkem. Barvy bloků jsou odhad z vykreslené oblasti; oddal kolečkem pro celý svět.</p>
+      <label class="check"><input id="opt-cut" type="checkbox" disabled> Řez výšky – pohled do jeskyní</label>
+      <div class="cut-row">
+        <input id="cut-level" type="range" min="0" max="255" step="1" value="48" disabled aria-label="Výška řezu">
+        <span id="cut-value" class="num">vypnuto</span>
+      </div>
+      <label class="check"><input id="opt-cut-cap" type="checkbox" checked> Uzavřít řez (průřez horninou)</label>
+      <p class="note">Jeskynní data jsou zatím dostupná v detailu spawnu. Řez skryje vše nad zvolenou výškou; mimo detail tím nevznikne pohled do dosud neexportovaných jeskyní. Uzavřený řez kreslí šedou horninu, modrou vodu a oranžovou lávu; jeskyně jsou otvory. Bez uzavření je hornina průhledná. Víko se počítá z blokových dat načtených chunků. Odkaz: <code>?cut=40</code>.</p>
+    </section>
+
+    <section id="players" class="block" hidden>
+      <h2>Hráči</h2>
+      <label class="check"><input id="opt-players" type="checkbox" checked> Zobrazit hráče na mapě</label>
+      <ul id="players-list" class="hits"></ul>
+      <p id="players-note" class="note">Poloha k poslednímu uložení hry (ne živě). Zelená = online, žlutá = do 24 h, šedá = starší. Kliknutím přesunete pohled.</p>
+    </section>
+
+    <footer class="panel-foot">
+      <p>Myš: levé tlačítko otáčí, pravé posouvá, kolečko přibližuje k místu pod kurzorem. Klávesnice: WASD a šipky plynule posouvají pohled. Dotyk: jeden prst otáčí, dva posouvají a přibližují.</p>
+      <p id="pick-help" hidden>Krátké kliknutí nebo klepnutí na terén zobrazí souřadnice a identitu bloku.</p>
+      <p>Průběžně obnovovaný export uloženého terénu. Značky hráčů ukazují poslední uložené polohy; pohyb entit se nezobrazuje živě.</p>
+    </footer>
+  </aside>
+</body>
+</html>

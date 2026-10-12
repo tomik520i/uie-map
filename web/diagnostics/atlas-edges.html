@@ -1,0 +1,31 @@
+<!doctype html><meta charset="utf-8"><title>UIE atlas edge regression</title>
+<style>body{background:#16202a;color:white;font:14px monospace}canvas{border:1px solid #777;margin:8px;max-width:45vw}pre{white-space:pre-wrap}</style>
+<h1>GPU regression: MSAA atlas edges</h1><p>Left: original. Right: centroid. Transparent neighbours surround the gray sprite.</p>
+<pre id="result">Running…</pre>
+<script type="module">
+import * as THREE from '../vendor/three.module.js';
+import {useCentroidAtlasSampling} from '../atlas-sampling.js';
+try {
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setSize(512,512);renderer.setClearColor(0x000000,0);
+ const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(45,1,.1,100);camera.position.set(2.6,1.8,5.1);camera.lookAt(0,0,0);
+ const pixels=new Uint8Array(64*64*4);
+ for(let y=16;y<32;y++)for(let x=16;x<32;x++){const i=(y*64+x)*4;pixels[i]=pixels[i+1]=pixels[i+2]=170;pixels[i+3]=255;}
+ const atlas=new THREE.DataTexture(pixels,64,64);atlas.magFilter=THREE.NearestFilter;atlas.minFilter=THREE.NearestFilter;atlas.needsUpdate=true;
+ const geometry=new THREE.BufferGeometry();const positions=[],uvs=[],indices=[];
+ for(let y=-3;y<3;y++)for(let x=-3;x<3;x++){
+  const b=positions.length/3;positions.push(x*.5,y*.5,0,(x+1)*.5,y*.5,0,(x+1)*.5,(y+1)*.5,0,x*.5,(y+1)*.5,0);
+  uvs.push(16.01/64,16.01/64,31.99/64,16.01/64,31.99/64,31.99/64,16.01/64,31.99/64);indices.push(b,b+1,b+2,b,b+2,b+3);
+ }
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.setIndex(indices);
+ const plain=new THREE.MeshBasicMaterial({color:0xaaaaaa});const old=new THREE.MeshBasicMaterial({map:atlas,alphaTest:.5});const fixed=useCentroidAtlasSampling(new THREE.MeshBasicMaterial({map:atlas,alphaTest:.5}),THREE.ShaderChunk);
+ const mesh=new THREE.Mesh(geometry,plain);scene.add(mesh);
+ const target=new THREE.WebGLRenderTarget(512,512,{samples:4});const sampleCounts=renderer.getContext().getInternalformatParameter(renderer.getContext().RENDERBUFFER,renderer.getContext().RGBA8,renderer.getContext().SAMPLES);
+ if(!Array.from(sampleCounts).some(n=>n>=4))throw new Error('4x MSAA unavailable; regression not verified');
+ function draw(material,show){mesh.material=material;renderer.setRenderTarget(target);renderer.clear();renderer.render(scene,camera);const b=new Uint8Array(512*512*4);renderer.readRenderTargetPixels(target,0,0,512,512,b);if(show){const c=document.createElement('canvas');c.width=c.height=512;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(b),512,512),0,0);document.body.append(c);}return b;}
+ const reference=draw(plain,false),before=draw(old,true),after=draw(fixed,true);let tested=0,badBefore=0,badAfter=0;
+ for(let i=3;i<reference.length;i+=4)if(reference[i]===255){tested++;if(before[i]<250)badBefore++;if(after[i]<250)badAfter++;}
+ const report={testedFullyCoveredPixels:tested,missingCoverageBefore:badBefore,missingCoverageAfter:badAfter,pass:tested>10000&&badBefore>0&&badAfter===0};
+ document.querySelector('#result').textContent=JSON.stringify(report,null,2);document.title=report.pass?'PASS atlas edges':'FAIL atlas edges';
+ renderer.dispose();target.dispose();
+}catch(e){document.querySelector('#result').textContent=String(e.stack||e);document.title='ERROR atlas edges';console.error(e);}
+</script>

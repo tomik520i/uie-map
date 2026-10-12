@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+node_modules/
+.env
+.env.*
+!.env.example
+web/data/
+world/
+backups/
+out/
+scratch/
+*.mca
+*.uib
+*.uih
+*.zip
+*.log

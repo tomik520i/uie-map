@@ -1,0 +1,32 @@
+name: Testy prototypu
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Čtení světa a renderer
+        run: python -m unittest test_reader test_offline_renderer test_world_hires test_colormap_determinism.ColorDeterminismTests
+      - name: Kolizní export a obnova
+        run: python -m unittest test_collision_world_store test_collision_world_region test_collision_world_runner test_collision_pair_stage test_collision_region_probe
+      - name: Retence a bezpečné publikování
+        run: python -m unittest test_collision_world_retention test_collision_world_store test_collision_world_gc test_collision_gc test_collision_retention
+      - name: Webový prohlížeč a HTTP rozhraní
+        run: node --test test_*.mjs

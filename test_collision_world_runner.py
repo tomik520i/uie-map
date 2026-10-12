@@ -112,5 +112,97 @@ class RunnerTests(unittest.TestCase):
             with self.subTest(change=change):self.assertFalse(runner.cold_retry_candidate({**base,**change}))
         self.assertTrue(runner.cold_retry_candidate(base))
 
+    # ------------------------------------------------------------------ task 211
+
+    def detailed_mismatch(self):
+        report=self.mismatch();report.update(counts={'mismatch':1},seconds={'total':1.5})
+        return report
+
+    def test_cold_retry_report_on_disk_keeps_the_previous_attempt(self):
+        self.tools.fresh=Mock(return_value=object())
+        bad=self.detailed_mismatch();good=copy.deepcopy(bad);good['ok']=True;good['tiles']['0,0']['result']='match'
+        self.stage=Mock(side_effect=[bad,good])
+        self.check.side_effect=lambda report,**kw:(_ for _ in ()).throw(ValueError('not matched')) if not report['ok'] else {'0,0':'c'*64}
+        self.run_pass(max_regions=1)
+        stored=runner.load_report(self.out/'reports'/'0,0.json')
+        self.assertIs(stored['ok'],True,'the retry report replaced the first one')
+        self.assertEqual(stored['coldRetry']['reason'],'stable-geometry-mismatch')
+        self.assertEqual(stored['coldRetry']['previousAttempt'],
+                         dict(counts={'mismatch':1},seconds={'total':1.5},geometry={'0,0':'e'*64}))
+
+    def test_failed_cold_retry_is_still_recorded_on_disk(self):
+        self.tools.fresh=Mock(return_value=object())
+        self.stage=Mock(side_effect=[self.detailed_mismatch(),self.detailed_mismatch()])
+        self.check.side_effect=ValueError('still mismatched')
+        result=self.run_pass(max_regions=1)
+        stored=runner.load_report(self.out/'reports'/'0,0.json')
+        self.assertIs(stored['ok'],False)
+        self.assertEqual(stored['coldRetry']['previousAttempt']['geometry'],{'0,0':'e'*64})
+        self.assertEqual((result['failedRegions'],result['coldRetries']),(1,1))
+
+    def test_retry_budget_error_fails_only_that_region_and_the_queue_continues(self):
+        fresh=object();self.tools.fresh=Mock(return_value=fresh);calls=[]
+        def stage(jx,jz,**kw):
+            calls.append((jx,jz,kw['tools'] is fresh))
+            if (jx,jz)==(1,0):return dict(region=[1,0],ok=True,tiles={'8,0':{}})
+            if kw['tools'] is fresh:raise ValueError('store budget exhausted during region')
+            return self.detailed_mismatch()
+        self.stage=stage
+        self.check.side_effect=lambda report,**kw:(_ for _ in ()).throw(ValueError('not ok')) if not report['ok'] else {k:'c'*64 for k in report['tiles']}
+        result=self.run_pass()
+        self.assertEqual(calls,[(0,0,False),(0,0,True),(1,0,False)])
+        self.assertEqual((result['state'],result['failedRegions'],result['completedRegions']),('partial',1,1))
+        self.assertEqual(result['errors'][0]['region'],[0,0]);self.assertIn('budget',result['errors'][0]['message'])
+        self.assertEqual(result['coldRetries'],1);self.publish.assert_called_once()
+        stored=runner.load_report(self.out/'reports'/'0,0.json')
+        self.assertNotIn('coldRetry',stored,'the first attempt stays on disk when the retry did not finish')
+
+    def test_tools_without_a_callable_fresh_never_retry(self):
+        for fresh in (None,'not callable',Ellipsis):
+            with self.subTest(fresh=fresh):
+                self.tools=SimpleNamespace(read_index=self.tools.read_index)
+                if fresh is not Ellipsis:self.tools.fresh=fresh          # Ellipsis: attribute absent
+                self.stage=Mock(return_value=self.detailed_mismatch())
+                self.check.side_effect=ValueError('mismatch')
+                result=self.run_pass(max_regions=1)
+                self.assertEqual(self.stage.call_count,1)
+                self.assertEqual((result['coldRetries'],result['failedRegions']),(0,1))
+
+    def test_unstable_or_unclean_reports_are_never_retried_in_a_real_pass(self):
+        base=self.detailed_mismatch()
+        changes={'copy differs':dict(source={**base['source'],'copy':'z'}),
+                 'registry changed':dict(source={**base['source'],'registryAfter':'z'}),
+                 'registry missing':dict(source={k:v for k,v in base['source'].items() if k!='registrySha256'}),
+                 'cleanup failed':dict(scratchCleanup='leftover'),
+                 'fatal':dict(fatal='world input changed'),
+                 'tile changed':dict(tiles={'0,0':dict(result='changed')}),
+                 'only unknown':dict(tiles={'0,0':dict(result='unknown')})}
+        for label,change in changes.items():
+            with self.subTest(label):
+                self.tools.fresh=Mock(return_value=object())
+                self.stage=Mock(return_value={**copy.deepcopy(base),**change})
+                self.check.side_effect=ValueError('not ok')
+                result=self.run_pass(max_regions=1)
+                self.tools.fresh.assert_not_called()
+                self.assertEqual(self.stage.call_count,1)
+                self.assertEqual((result['coldRetries'],result['failedRegions']),(0,1))
+        for bad in ({**base,'tiles':{}},{**base,'tiles':{'0,0':'mismatch'}},'not a report'):
+            self.assertFalse(runner.cold_retry_candidate(bad))
+
+    def test_repair_after_reused_report_renders_at_most_twice(self):
+        # Upper bound in the real control flow: an initial render only happens when no usable report exists, and
+        # the StoreError repair only when the report was reused (no render yet). Either path renders once plus at
+        # most one cold retry: 2 stage calls per region and pass, never 4.
+        self.run_pass(max_regions=1)                                   # ok report stored and published
+        self.tools.fresh=Mock(return_value=object())
+        self.stage=Mock(side_effect=[self.detailed_mismatch(),self.detailed_mismatch(),self.detailed_mismatch()])
+        self.check.side_effect=lambda report,**kw:(_ for _ in ()).throw(ValueError('not ok')) if report.get('ok') is False else {k:'c'*64 for k in report['tiles']}
+        self.publish.reset_mock()
+        self.publish.side_effect=[runner.publisher.StoreError('missing object'),dict(indexSha256='d'*64,entries=1)]
+        result=self.run_pass(max_regions=1)
+        self.assertEqual(self.stage.call_count,2,'repair render + one cold retry')
+        self.assertEqual(self.publish.call_count,1,'no publication after a failed repair')
+        self.assertEqual((result['failedRegions'],result['coldRetries'],result['reusedRegions']),(1,1,0))
+
 
 if __name__=='__main__':unittest.main()

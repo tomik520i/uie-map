@@ -4,25 +4,30 @@
 
 🌍 **[Živá ukázka mapy UIE](https://mcinfo.opicebot.cz/map/uie/)**
 
-UIE Map vytváří interaktivní webovou 3D mapu uloženého světa modovaného Minecraftu 1.7.10. Inspirací je způsob prohlížení světa v BlueMap, jde však o samostatnou implementaci zaměřenou na starší Minecraft a konkrétní modpack. Projekt není součástí BlueMap.
+UIE Map vytváří interaktivní webovou 3D mapu uloženého světa modovaného Minecraftu 1.7.10. Inspirací je způsob prohlížení světa v BlueMap, jde však o samostatný projekt. **Cílem je univerzálně konfigurovatelný renderer pro vlastní světy a modpacky; UIE je první ověřovací instalace.** Projekt není součástí BlueMap.
+
+Směřujeme k samostatnému programu s konfigurací světa, výběrem více dimenzí, automatickými aktualizacemi a úplným návodem. Volitelný Minecraft mod může později doplnit napojení na server. Tyto části ještě nejsou dokončené: [stav a plán vývoje](ROADMAP.md), [naměřené velikosti a orientační výpočty](KAPACITA.md).
 
 ## Co už funguje
 
-- Čtení Anvil regionů, Forge registru bloků a metadat, včetně podporovaného rozšířeného kódování ID.
+- Čtení Anvil regionů, Forge registru bloků a metadat, včetně NotEnoughIDs (`Blocks16`).
 - Offline renderer v Pythonu: povrch, textury z připraveného katalogu, částečné tvary, průhlednost a listí.
 - Webový prohlížeč s Three.js: zoom, myš, WASD/šipky, létání a chůze.
 - Načítání detailu v okolí pohledu a zjednodušený vzdálený terén s omezením paměti.
 - Neměnné publikované generace, průběžné aktualizace a stavové panely.
 - Diagnostika nepodporovaných bloků včetně názvů, ID, metadat a souřadnic.
-- Jeskynní pohled a postupný render podzemí celého uloženého světa.
+- Jeskynní pohled a postupný render podzemí celé hlavní dimenze.
 
 **Pro běžný render ani prohlížení nemusí běžet Minecraft klient.** Renderer čte data světa a používá předem připravený katalog modelů a textur. Příprava katalogu pro jiný modpack je samostatná práce; automatický import libovolných modů zatím není hotový.
+
+Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. To je dosud ověřená cesta přípravy katalogu, nikoli zamýšlená podmínka trvale běžícího klienta. Další způsoby získání modelů a textur jsou součástí plánu importu modpacků.
 
 ## Co je rozpracované a jaká jsou omezení
 
 - Podpora modovaných bloků je neúplná. Některé mají zjednodušený tvar či metadata; chybějící model může být fialový zástupný blok.
 - Kolize odvozené ze skutečných blokových dat se připravují pro celý svět. Tvary některých modovaných bloků zůstávají přibližné; mimo dostupná data může chůze používat přibližný terén.
 - Celosvětové jeskynní a kolizní exporty jsou dlouhé dávkové úlohy; stav ukázky se postupně mění.
+- Současný celosvětový export pokrývá hlavní dimenzi. Automatická správa dalších dimenzí a jejich přepínání na webu jsou plánované.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Oprava barev modovaných biomů je ve zdrojích, ale vyžaduje novou generaci dat. Zdrojový kód v tomto repozitáři proto nemusí přesně odpovídat nasazené ukázce.
 - Formáty dat a provozní rozhraní se mohou měnit. Obnova po skutečném restartu celého produkčního stroje zatím není kompletně ověřená.
@@ -44,7 +49,7 @@ Starší adaptéry a experimentální cesty zůstávají ve zdrojích kvůli vý
 
 ## Lokální vývoj
 
-Potřebujete Python 3.10+ a Node.js 18+. Pro produkční exporty se používá Linux; některé testy ověřují POSIX zámky a chování souborového systému. Pythonové jádro používá standardní knihovnu. Three.js je přiložen v `web/vendor/` včetně jeho licence.
+Automatické testy na GitHubu používají Python 3.12 a Node.js 22. Pro produkční exporty se používá Linux; některé testy ověřují POSIX zámky a chování souborového systému. Pythonové jádro používá standardní knihovnu. Three.js je přiložen v `web/vendor/` včetně jeho licence.
 
 Základní testy rendereru:
 

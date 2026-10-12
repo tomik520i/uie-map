@@ -26,6 +26,8 @@ jobs:
         run: python -m unittest test_reader test_offline_renderer test_world_hires test_colormap_determinism.ColorDeterminismTests
       - name: Kolizní export a obnova
         run: python -m unittest test_collision_world_store test_collision_world_region test_collision_world_runner test_collision_pair_stage test_collision_region_probe
+      - name: Porovnání geometrie a barev generací
+        run: python -m unittest test_surface_color_diff
       - name: Retence a bezpečné publikování
         run: python -m unittest test_collision_world_retention test_collision_world_store test_collision_world_gc test_collision_gc test_collision_retention
       - name: Webový prohlížeč a HTTP rozhraní

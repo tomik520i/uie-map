@@ -6,6 +6,7 @@ Stav k 12. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzen
 - **JavaScript: 503 testů prošlo, 1 přeskočen**, celkem 504. Přeskočená kontrola vyžaduje neveřejná exportovaná data, která repozitář neobsahuje.
 - **62 Linux testů kolizního exportu prošlo** v odděleném prostředí, včetně opakování výpočtu s čistou cache.
 - **96 Linux testů retence a publikování prošlo** v odděleném prostředí.
+- **6 testů porovnávání geometrie, UV a barev prošlo** na Windows i Linuxu; nástroj pouze diagnostikuje rozdíly a nenahrazuje kontrolu publikace.
 - Úklid byl ověřen i na soukromých kopiích dvou skutečných datových párů se simulovaným stárnutím. Produkční soubory se při tomto ověření nemazaly.
 - Dvě skutečné problémové dlaždice prošly opakovaným výpočtem a úplným ověřením výsledných dat. Následně se studenou cache prošel i celý původně odmítnutý region: 64/64 dlaždic se shodným hashem. To nenahrazuje dokončení exportu celé mapy.
 

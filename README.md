@@ -21,7 +21,7 @@ UIE Map vytváří interaktivní webovou 3D mapu uloženého světa modovaného 
 ## Co je rozpracované a jaká jsou omezení
 
 - Podpora modovaných bloků je neúplná. Některé mají zjednodušený tvar či metadata; chybějící model může být fialový zástupný blok.
-- Přesné blokové kolize se připravují pro celý svět. Mimo dostupná data může chůze používat přibližný terén.
+- Kolize odvozené ze skutečných blokových dat se připravují pro celý svět. Tvary některých modovaných bloků zůstávají přibližné; mimo dostupná data může chůze používat přibližný terén.
 - Celosvětové jeskynní a kolizní exporty jsou dlouhé dávkové úlohy; stav ukázky se postupně mění.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Oprava barev modovaných biomů je ve zdrojích, ale vyžaduje novou generaci dat. Zdrojový kód v tomto repozitáři proto nemusí přesně odpovídat nasazené ukázce.

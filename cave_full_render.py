@@ -165,8 +165,13 @@ def coverage(out,world):
             'remainingRegions':len(planned)-covered,'publishedTiles':len(index['pairs']),
             'geometryIndexSha256':current[0],'capIndexSha256':sha}
 
-def run(out,world,catalog,*,wait_unit=None,max_seconds=7*86400,sleep=time.sleep):
+def run(out,world,catalog,*,wait_unit=None,max_seconds=7*86400,sleep=time.sleep,
+        store_budget_gib=80,expansion_reserve_gib=24):
     import subprocess
+    if type(store_budget_gib) is not int or not 1<=store_budget_gib<=8192:
+        raise ValueError('store_budget_gib must be an integer in 1..8192')
+    if type(expansion_reserve_gib) is not int or not 20<=expansion_reserve_gib<=8192:
+        raise ValueError('expansion_reserve_gib must be an integer in 20..8192')
     out=batch.check_store(Path(out));world=Path(world);catalog=Path(catalog)
     fd=os.open(out/'.cave-full-lock',os.O_RDWR|os.O_CREAT|os.O_NOFOLLOW,0o600)
     try:
@@ -174,7 +179,7 @@ def run(out,world,catalog,*,wait_unit=None,max_seconds=7*86400,sleep=time.sleep)
         started=time.time();deadline=time.monotonic()+max_seconds
         doc={'format':'UIE_CAVE_FULL_STATUS1','state':'running','startedAt':started,
              'updatedAt':started,'completedSteps':0,'scope':'entire-saved-world',
-             'storeBudgetGiB':80,'expansionReserveGiB':24}
+             'storeBudgetGiB':store_budget_gib,'expansionReserveGiB':expansion_reserve_gib}
         def save(state,**fields):
             doc.update(fields,state=state,updatedAt=time.time());hb._atomic(out/STATUS,json.dumps(doc,sort_keys=True).encode())
         try:
@@ -188,7 +193,7 @@ def run(out,world,catalog,*,wait_unit=None,max_seconds=7*86400,sleep=time.sleep)
             session=PublishSession();consecutive_failures=0
             failures={'geometry':0,'caps':0}
             command=batch.renderer_command(out,world,catalog,(768,256))
-            command+=['--cave-store-budget-mib',str(80*1024),'--cave-reserve-gib','24']
+            command+=['--cave-store-budget-mib',str(store_budget_gib*1024),'--cave-reserve-gib',str(expansion_reserve_gib)]
 
             def recover():
                 # Same session as the batches; heartbeat on every tick keeps the status fresh.
@@ -252,7 +257,11 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--out',type=Path,required=True);ap.add_argument('--world',type=Path,required=True)
     ap.add_argument('--catalog-dir',type=Path,required=True);ap.add_argument('--wait-unit')
+    ap.add_argument('--store-budget-gib',type=int,default=80,help='maximum accounted cave store size (default 80 GiB)')
+    ap.add_argument('--expansion-reserve-gib',type=int,default=24,
+                    help='minimum free space for adding coverage; updates still use the renderer floor (default 24 GiB)')
     a=ap.parse_args();signal.signal(signal.SIGTERM,batch._terminate)
-    run(a.out,a.world,a.catalog_dir,wait_unit=a.wait_unit)
+    run(a.out,a.world,a.catalog_dir,wait_unit=a.wait_unit,store_budget_gib=a.store_budget_gib,
+        expansion_reserve_gib=a.expansion_reserve_gib)
 
 if __name__=='__main__':main()

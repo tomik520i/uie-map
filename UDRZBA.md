@@ -8,9 +8,17 @@
 python collision_world_gc_cli.py --out /absolutni/cesta/ke/koliznimu/vystupu
 ```
 
-Adresář musí mít platný vlastnický marker, profil světového GC, povolení GC a publikační žurnál. Příkaz je sám nezakládá; jejich bezpečná inicializace patří do budoucího provozního nasazení. Výstup není cesta k Minecraft světu ani přímo ke složce `store`.
+Adresář musí mít platný vlastnický marker, profil světového GC, povolení GC a publikační žurnál. Samotný příkaz úklidu je nezakládá. Výstup není cesta k Minecraft světu ani přímo ke složce `store`.
 
-Inicializace profilu musí proběhnout pod stejným výhradním exportním zámkem; samotná nízkoúrovňová funkce `enable_gc` jej nezískává. Markery se během běhu nesmějí ručně měnit. Jinak by vzniklo okno, ve kterém publikace není zaznamenaná v žurnálu. Automatický inicializační příkaz zatím není součástí tohoto nástroje.
+Inicializaci nového světového profilu obstarává `collision_world_gc_init.py` pod stejným výhradním exportním zámkem. Výchozí kontrola nic neaktivuje; může založit pouze soubor zámku:
+
+```sh
+python collision_world_gc_init.py --out /absolutni/cesta/ke/koliznimu/vystupu
+```
+
+Teprve explicitní `--apply` zapíše žurnál chránící aktuální index, profil a nakonec povolení GC. Nic nemaže ani nenastavuje časovač. Zachovává dřívější platný žurnál a umožňuje dokončit přerušenou inicializaci. Již aktivní platný profil při opakování nemění. Starý profil GC či jeho ledger odmítne převádět; při běžícím exportu vrátí `busy`/kód4. Neplatný vstup vrací kód1.
+
+Po aktivaci musí všechny další průchody světového exportéru používat `--allow-world-gc`. Starší exportér kompatibilní není. Inicializaci proto provádějte až při přechodu na kompatibilní verzi a mezi průchody. Vlastnický marker musí již pocházet z přípravy exportu; inicializační příkaz si cizí adresář nepřivlastňuje. Nízkou úroveň `enable_gc` nevolejte bez zámku a markery neupravujte ručně.
 
 Skutečné odstranění vyžaduje přepínač `--apply`. I pak se zachovává publikační žurnál, ověření všech chráněných odkazů a minimální ochranné lhůty; jeden běh řeší nejvýše jednu fázi: staré indexy, potom nepoužívané páry, potom jejich objekty. Není to příkaz k rekurzivnímu mazání.
 

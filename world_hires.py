@@ -238,24 +238,18 @@ def _init(catalog_dir: str, registry: dict, region_dir: str, out: str, caves=Fal
               scratch=Path(tempfile.mkdtemp(prefix="uie-hires-")))
 
 
-_MISSING_IDS = __import__("re").compile(r"missing from the registry: (.*)")
-
-
 def _batch(cb, area, core, window):
     """from_chunks; block ids absent from level.dat (removed mods) get a placeholder name and render as the
     catalog fallback instead of failing the tile."""
+    from offline_volume import missing_registry_ids
     for _ in range(8):
         try:
             return cb.from_chunks(area, core, _W["registry"], window)
         except cb.BatchError as error:
-            match = _MISSING_IDS.search(str(error))
-            if not match:
-                raise
-            ids = [int(part.split(" at ")[0]) for part in match.group(1).split(", ") if part.split(" at ")[0].isdigit()]
-            if not ids:
-                raise
+            ids=missing_registry_ids(str(error),_W['registry'])
+            if not ids:raise
             for block_id in ids:
-                _W["registry"][block_id] = f"uie:unknown_{block_id}"
+                _W["registry"].setdefault(block_id, f"uie:unknown_{block_id}")
     raise HiresError("too many unknown block ids")
 
 

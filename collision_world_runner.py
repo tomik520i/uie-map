@@ -2,7 +2,7 @@
 
 Private output until explicitly configured on the web server. One sequential pass
 over all published surface regions, source-stable staging, bounded proof warm-up,
-pointer-last publication. No deletion and no GC opt-in. A later pass catches changes;
+pointer-last publication. No deletion or automatic GC opt-in. A later pass catches changes;
 reports are only reuse hints, rechecked against live sources and verified objects.
 """
 from pathlib import Path
@@ -81,10 +81,32 @@ def cold_retry_candidate(report):
     return bool(tiles) and all(isinstance(v,dict) for v in tiles.values()) and 'mismatch' in results and results <= {'match','unknown','mismatch'}
 
 
+def check_gc_profile(out,allow_world_gc=False):
+    """Read-only compatibility gate; caller holds the export lock. Never enables GC.
+
+    Maintenance uses this same lock, so it cannot remove staged objects mid-pass.
+    Publications already journal both old and new indexes before moving the pointer.
+    """
+    if type(allow_world_gc) is not bool:raise ValueError('allow_world_gc must be bool')
+    out=Path(out)
+    enabled=cb._gc_enabled(out/'store')
+    if not allow_world_gc:
+        if enabled:raise ValueError('world store GC requires explicit --allow-world-gc')
+        return
+    import collision_world_gc as gc
+    try:
+        owned,store=gc.legacy.check_owned_out(out)
+        gc._profile(owned)
+        gc.legacy._check_enabled(owned)
+        gc.legacy.load_journal(owned,store)
+    except (ValueError,OSError,gc.legacy.GcRefused) as error:
+        raise ValueError('world GC profile refused: '+str(error)) from error
+
+
 def run_pass(*,out,world,hires_store,tools,budget_bytes=30*1024**3,min_free_bytes=24*1024**3,
              max_regions=None,only_regions=None,cache=None,clock=time.time,stage_fn=region.stage_region,
              check_fn=region.accepted_updates,publish_fn=publisher.publish_incremental,
-             disk_free=lambda p:shutil.disk_usage(p).free):
+             disk_free=lambda p:shutil.disk_usage(p).free,allow_world_gc=False):
     """Caller holds out/.export.lock. Returns explicit complete/partial/budget stop.
 
     max_regions is for isolated integration tests only; normal CLI plans ALL regions.
@@ -92,8 +114,7 @@ def run_pass(*,out,world,hires_store,tools,budget_bytes=30*1024**3,min_free_byte
     out,world,hires_store=map(Path,(out,world,hires_store))
     for name in ('store','reports'):
         (out/name).mkdir(exist_ok=True);region.stage._directory(out/name)
-    if cb._gc_enabled(out/'store'):
-        raise ValueError('world store GC is not yet supported; refuse enabled marker')
+    check_gc_profile(out,allow_world_gc)
     recovered=recover_scratch(out)
     planned=tools.read_index(hires_store)
     jobs=plan(planned);all_jobs=len(jobs)
@@ -154,6 +175,9 @@ def run_pass(*,out,world,hires_store,tools,budget_bytes=30*1024**3,min_free_byte
                     if region.logical_bytes(out)+64*1024**2>budget_bytes or disk_free(out)-64*1024**2<min_free_bytes:
                         status.update(state='stopped-budget',reason='publication metadata reserve');break
                     status['phase']='verifying';save()
+                    # Recheck opt-in on every attempt, including long warm-up loops.
+                    # Operator changes must use this lock; a changed profile must not silently publish.
+                    check_gc_profile(out,allow_world_gc)
                     before_proofs=len(cache);verification_budget=publisher.Budget(1024,256*1024**2)
                     try:
                         result=publish_fn(out/'store',expected_index=expected,updates=updates,removals=set(),
@@ -188,6 +212,7 @@ def main():
     for name in ('world','catalog-dir','hires-store','out'):ap.add_argument('--'+name,required=True,type=Path)
     ap.add_argument('--budget-gib',type=int,default=30)
     ap.add_argument('--min-free-gib',type=int,default=24)
+    ap.add_argument('--allow-world-gc',action='store_true',help='accept an already initialized world GC profile; never enables or runs deletion')
     a=ap.parse_args()
     if not 1<=a.budget_gib<=64 or not 20<=a.min_free_gib<=1024:ap.error('invalid disk limits')
     out=ce.check_paths(a.out,world=a.world,hires=a.hires_store,catalog=a.catalog_dir)
@@ -201,7 +226,7 @@ def main():
         os.nice(15)
         result=run_pass(out=out,world=a.world.resolve(),hires_store=a.hires_store.resolve(),
                         tools=probe.Toolkit(a.catalog_dir.resolve()),budget_bytes=a.budget_gib*1024**3,
-                        min_free_bytes=a.min_free_gib*1024**3)
+                        min_free_bytes=a.min_free_gib*1024**3,allow_world_gc=a.allow_world_gc)
         print(json.dumps(result));return 0 if result['state']=='complete' else 2
     finally:lock.close()
 

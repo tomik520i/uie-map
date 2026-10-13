@@ -10,11 +10,28 @@ Volume(batch) indexes columns like the batch: x from area.x, z from area.z.
 from __future__ import annotations
 
 from array import array
+import re
 
 import capture_batch as cb
 
 HEIGHT = 256
 COLUMN = 1 + HEIGHT * 3
+
+
+def missing_registry_ids(message, registry):
+    """Decode capture_batch's missing-ID diagnostic without treating coordinates as IDs.
+
+    This changes voxel names, hence geometry: keep the policy in this identity-hashed
+    module. A malformed/unrelated message returns no repair rather than guessing.
+    """
+    marker='missing from the registry: '
+    if marker not in message:return ()
+    payload=message.split(marker,1)[1]
+    entries=list(re.finditer(r'(\d+) at \(-?\d+, -?\d+, -?\d+\)',payload))
+    if not entries or ', '.join(item.group(0) for item in entries)!=payload:return ()
+    ids=tuple(dict.fromkeys(int(item.group(1)) for item in entries))
+    if any(not 0<=block_id<=65535 for block_id in ids):return ()
+    return tuple(block_id for block_id in ids if block_id not in registry)
 
 
 class Volume:

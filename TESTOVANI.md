@@ -7,6 +7,10 @@ Stav k 12. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzen
 - **62 Linux testů kolizního exportu prošlo** v odděleném prostředí, včetně opakování výpočtu s čistou cache.
 - **96 Linux testů retence a publikování prošlo** v odděleném prostředí.
 - **6 testů porovnávání geometrie, UV a barev prošlo** na Windows i Linuxu; nástroj pouze diagnostikuje rozdíly a nenahrazuje kontrolu publikace.
+- **135 Linux testů společné sady údržby prošlo**, včetně runneru, publikace, retence, příkazu GC, zámků mezi procesy a explicitního přijetí připraveného profilu. Jde o překrývající se sadu s výše uvedenými testy, počty se nesčítají.
+- **90 testů čtečky, rendereru a registrů prošlo** 13. října přímo v nové zmrazené serverové generaci. Zahrnují 15 regresních kontrol parseru chybějících ID. Původní parser selhal ve třech ze šesti prvních regresních testů: omylem přepisoval známá ID hodnotou souřadnice Y.
+- Na stabilní kopii skutečné dlaždice oprava zachovala ID portálu a reprodukovala správnou texturu. Vyžaduje nový přepočet, stará zveřejněná data tím nejsou opravena.
+- Příkaz údržby na kopiích skutečných dat ověřil návrat `busy` při zámku drženém jiným procesem a výchozí dry-run bez zápisu evidence mazání.
 - Úklid byl ověřen i na soukromých kopiích dvou skutečných datových párů se simulovaným stárnutím. Produkční soubory se při tomto ověření nemazaly.
 - Dvě skutečné problémové dlaždice prošly opakovaným výpočtem a úplným ověřením výsledných dat. Následně se studenou cache prošel i celý původně odmítnutý region: 64/64 dlaždic se shodným hashem. To nenahrazuje dokončení exportu celé mapy.
 

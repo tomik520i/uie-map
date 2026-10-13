@@ -30,6 +30,7 @@ Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. T
 - Současný celosvětový export pokrývá hlavní dimenzi. Automatická správa dalších dimenzí a jejich přepínání na webu jsou plánované.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Oprava barev modovaných biomů je ve zdrojích, ale vyžaduje novou generaci dat. Zdrojový kód v tomto repozitáři proto nemusí přesně odpovídat nasazené ukázce.
+- Opravena byla také chyba náhradních názvů chybějících ID: souřadnice ve zprávě o chybě mohly přepsat jiný, známý blok v registru. Ověřená oprava se právě přepočítává v nové oddělené generaci; dosavadní veřejná data ještě mohou být ovlivněná.
 - Formáty dat a provozní rozhraní se mohou měnit. Obnova po skutečném restartu celého produkčního stroje zatím není kompletně ověřená.
 
 ## Jak je projekt sestavený
@@ -46,6 +47,8 @@ Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. T
 | Automatické testy | `test_*.py`, `test_*.mjs` |
 
 Starší adaptéry a experimentální cesty zůstávají ve zdrojích kvůli vývoji a testům. Jejich přítomnost neznamená, že jsou všechny součástí současného provozu.
+
+Vývojový příkaz pro omezenou údržbu kolizních dat je popsán v [UDRZBA.md](UDRZBA.md). Automatický úklid celosvětových kolizí ještě není v ukázce aktivovaný.
 
 ## Lokální vývoj
 

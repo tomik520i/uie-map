@@ -7,7 +7,7 @@
 | Část | Stav |
 | --- | --- |
 | Povrch hlavního světa, web, ovládání, diagnostika, přírůstkové publikování | **HOTOVO / NASAZENO v ukázce** |
-| Oprava determinismu barev modovaných biomů | **ROZDĚLANÉ:** oprava otestovaná, oddělený přepočet běží |
+| Opravy determinismu barev a registru bloků | **ROZDĚLANÉ:** opravy otestované, nová oddělená generace se přepočítává; starší kandidát nahrazen 13. 10. po odhalení chyby parseru ID |
 | Jeskyně hlavního uloženého světa | **ROZDĚLANÉ:** celý export běží, pokrytí se postupně doplňuje |
 | Přesná chůze a kolize celého hlavního světa | **ROZDĚLANÉ:** soukromý export; celosvětové nasazení a průběžná údržba zbývají |
 | Ověření obnovy po skutečném restartu hostitele | **ČEKÁ** |

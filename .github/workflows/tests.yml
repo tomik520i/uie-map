@@ -31,7 +31,7 @@ jobs:
       - name: Příkaz údržby a profil celosvětového exportu
         run: python -m unittest test_collision_world_gc_cli test_collision_world_gc_profile test_collision_maintenance_integration
       - name: Registry bloků nesmí být přepsány souřadnicemi
-        run: python -m unittest test_registry_placeholder_parsing
+        run: python -m unittest test_registry_placeholder_parsing test_registry_history
       - name: Retence a bezpečné publikování
         run: python -m unittest test_collision_world_retention test_collision_world_store test_collision_world_gc test_collision_gc test_collision_retention
       - name: Webový prohlížeč a HTTP rozhraní

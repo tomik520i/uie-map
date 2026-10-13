@@ -1,6 +1,6 @@
 # Ověření zveřejněného prototypu
 
-Stav k 12. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzením, že je celý plán dokončený.
+Stav k 13. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzením, že je celý plán dokončený.
 
 - **75 základních Python testů prošlo** přímo v připravené kopii repozitáře: čtení světa, renderer, dlaždice a regresní testy barev.
 - **JavaScript: 503 testů prošlo, 1 přeskočen**, celkem 504. Přeskočená kontrola vyžaduje neveřejná exportovaná data, která repozitář neobsahuje.
@@ -10,13 +10,16 @@ Stav k 12. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzen
 - **135 Linux testů společné sady údržby prošlo**, včetně runneru, publikace, retence, příkazu GC, zámků mezi procesy a explicitního přijetí připraveného profilu. Jde o překrývající se sadu s výše uvedenými testy, počty se nesčítají.
 - **90 testů čtečky, rendereru a registrů prošlo** 13. října přímo v nové zmrazené serverové generaci. Zahrnují 15 regresních kontrol parseru chybějících ID. Původní parser selhal ve třech ze šesti prvních regresních testů: omylem přepisoval známá ID hodnotou souřadnice Y.
 - Na stabilní kopii skutečné dlaždice oprava zachovala ID portálu a reprodukovala správnou texturu. Vyžaduje nový přepočet, stará zveřejněná data tím nejsou opravena.
+- **6 dalších integračních regresí registru prošlo na Windows i Linuxu.** Používají skutečné sestavení Volume ze syntetických chunků a porovnávají názvy použitých bloků i celé bajty kolizních dat před a po zpracování neznámých ID. Netestují vykreslení všech modů.
+- **64 skutečných kolizních párů opravené generace prošlo úplnou kontrolou** vůči soukromému povrchovému vzorku. Opakovaný běh obnovil hotovou oblast bez nového renderování; pokus spojit nový export se starou generací byl odmítnut před kopírováním světa.
+- **82 Linux testů jeskynní přípravy prošlo** a skutečná dlaždice prošla ověřením geometrie i dat pro řez terénem. Jde o překrývající se sadu zahrnující registry; není to dokončený render celého podzemí.
 - Příkaz údržby na kopiích skutečných dat ověřil návrat `busy` při zámku drženém jiným procesem a výchozí dry-run bez zápisu evidence mazání.
 - Úklid byl ověřen i na soukromých kopiích dvou skutečných datových párů se simulovaným stárnutím. Produkční soubory se při tomto ověření nemazaly.
 - Dvě skutečné problémové dlaždice prošly opakovaným výpočtem a úplným ověřením výsledných dat. Následně se studenou cache prošel i celý původně odmítnutý region: 64/64 dlaždic se shodným hashem. To nenahrazuje dokončení exportu celé mapy.
 
 ## Důležité rozlišení
 
-**Implementované a otestované neznamená nasazené.** Změna rendereru mění identitu generace a musí projít samostatným přepočtem a publikací. Oprava barev modovaných biomů a celosvětová kolizní retence jsou stále ve vývojové fázi. Obnova s čistou cache byla nasazena do soukromého celosvětového kolizního exportu; veřejné přepnutí těchto dat ještě neproběhlo.
+**Implementované a otestované neznamená nasazené.** Změna rendereru mění identitu generace a musí projít samostatným přepočtem a publikací. Přepočet s opravou barev a registru běží; celosvětová kolizní retence není aktivovaná. Starý soukromý kolizní export byl zastaven, jeho data zachována. Nový export musí vzniknout do samostatného adresáře proti opravenému povrchu; veřejné přepnutí ještě neproběhlo.
 
 Vybrané testy se spouštějí také přes GitHub Actions při změnách hlavní větve a v pull requestech. Aktuální výsledek je na kartě Actions; tento dokument nenahrazuje výsledek konkrétního běhu.
 

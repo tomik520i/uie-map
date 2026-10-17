@@ -1,6 +1,6 @@
 # Ověření zveřejněného prototypu
 
-Stav k 13. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzením, že je celý plán dokončený.
+Stav k 18. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzením, že je celý plán dokončený.
 
 - **75 základních Python testů prošlo** přímo v připravené kopii repozitáře: čtení světa, renderer, dlaždice a regresní testy barev.
 - **JavaScript: 503 testů prošlo, 1 přeskočen**, celkem 504. Přeskočená kontrola vyžaduje neveřejná exportovaná data, která repozitář neobsahuje.
@@ -21,7 +21,7 @@ Stav k 13. říjnu 2026. Testy nejsou zárukou podpory všech modů ani potvrzen
 
 ## Důležité rozlišení
 
-**Implementované a otestované neznamená nasazené.** Změna rendereru mění identitu generace a musí projít samostatným přepočtem a publikací. Přepočet s opravou barev a registru běží; celosvětová kolizní retence není aktivovaná. Starý soukromý kolizní export byl zastaven, jeho data zachována. Nový export musí vzniknout do samostatného adresáře proti opravenému povrchu; veřejné přepnutí ještě neproběhlo.
+**Implementované a otestované neznamená nasazené.** Změna rendereru mění identitu generace a musí projít samostatným přepočtem a publikací. Povrch s opravou barev a registru je dokončený soukromě, opravené jeskyně byly18.10.zveřejněny; celosvětová kolizní retence není aktivovaná. Starý soukromý kolizní export byl zastaven, jeho data zachována. Nový export musí vzniknout do samostatného adresáře proti opravenému povrchu; veřejné přepnutí ještě neproběhlo.
 
 Vybrané testy se spouštějí také přes GitHub Actions při změnách hlavní větve a v pull requestech. Aktuální výsledek je na kartě Actions; tento dokument nenahrazuje výsledek konkrétního běhu.
 
@@ -52,3 +52,15 @@ python -m unittest test_collision_world_retention test_collision_world_store tes
 ```
 
 Provozní testy skutečného světa nejsou součástí těchto příkazů. Vyžadují vlastní vstupní data a izolované výstupy; testovací příkazy nemají nahrazovat kontrolu produkčního nasazení.
+
+
+## Dokončené podzemí — 18. října
+
+- 13 Linux testů nezávislého ověřovače a datových párů prošlo, včetně poškozených dat, neúplného pokrytí, změny ukazatele generace a omezené dekomprese.
+- Všech56 782 skutečných jeskynních párů ve983oblastech prošlo úplným ověřením kontrolních součtů, formátu, souřadnic a rekonstrukce indexu. Kontrola trvala přibližně8minut a neměnila data.
+- Soukromý i veřejný prohlížeč ověřil načítání3oblastí, řezy30/31, uvolňování paměti, přepínání povrch/podzemí a nulový počet chyb JavaScriptu. Výchozí povrch nestahuje jeskynní data.
+- Dokončená mapa stále představuje regionální snímky pořízené během renderu, nikoli současný snímek celé běžící hry. Ostatní dimenze tím nejsou dokončené.
+
+```sh
+python -m unittest test_cave_release_verify test_cave_pair test_cave_pair_index
+```

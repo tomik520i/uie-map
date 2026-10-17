@@ -1,14 +1,14 @@
 # Směr projektu a stav vývoje
 
-**Cíl: stáhnout program, nastavit vlastní svět Minecraft 1.7.10 a modpack, vybrat dimenze a nechat automaticky vytvářet webovou mapu.** UIE je první ověřovací svět, nikoli konečný rozsah produktu. Stav k 12. 10. 2026; níže uvedené plánované funkce zatím nejsou příslibem dostupné instalace.
+**Cíl: stáhnout program, nastavit vlastní svět Minecraft 1.7.10 a modpack, vybrat dimenze a nechat automaticky vytvářet webovou mapu.** UIE je první ověřovací svět, nikoli konečný rozsah produktu. Stav k 18. 10. 2026; níže uvedené plánované funkce zatím nejsou příslibem dostupné instalace.
 
 ## Nejprve dokončit současnou sadu
 
 | Část | Stav |
 | --- | --- |
 | Povrch hlavního světa, web, ovládání, diagnostika, přírůstkové publikování | **HOTOVO / NASAZENO v ukázce** |
-| Opravy determinismu barev a registru bloků | **ROZDĚLANÉ:** opravy otestované, nová oddělená generace se přepočítává; starší kandidát nahrazen 13. 10. po odhalení chyby parseru ID |
-| Jeskyně hlavního uloženého světa | **ROZDĚLANÉ:** celý export běží, pokrytí se postupně doplňuje |
+| Opravy determinismu barev a registru bloků | **HOTOVO SOUKROMĚ:** celý opravený povrch je přepočítaný a ověřený; veřejné přepnutí čeká na sladění navazujících dat |
+| Jeskyně hlavního uloženého světa | **HOTOVO / NASAZENO:** opravená generace983/983oblastí a56782dlaždic; všechny páry ověřeny, veřejný browser prošel18.10. |
 | Přesná chůze a kolize celého hlavního světa | **ROZDĚLANÉ:** soukromý export; celosvětové nasazení a průběžná údržba zbývají |
 | Ověření obnovy po skutečném restartu hostitele | **ČEKÁ** |
 

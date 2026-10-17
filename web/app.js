@@ -1431,12 +1431,13 @@ async function loadHiresIndex() {
 
 function showHiresPublication(index) {
   if (!index) return;
+  // These badges describe the legacy detail sample, not the streamed world store.
+  for (const id of ['sample-badge', 'sample-note', 'sample-flag']) $(id).hidden = true;
   if(WORLD_CAVES&&index.context?.caves===true){
-    $('title').textContent='UIE · zkušební podzemí';document.title=$('title').textContent;
+    $('title').textContent='UIE · podzemí světa';document.title=$('title').textContent;
     return; // The surface publication panel continues to describe its own store.
   }
   // Detail generation refreshes must not relabel the loaded whole-world surface as a sample.
-  for (const id of ['sample-badge', 'sample-note', 'sample-flag']) $(id).hidden = true;
   const publication = describeHiresPublication(index, time => fmtDate.format(new Date(time)));
   $('title').textContent = publication?.title ?? 'UIE · mapa světa';
   document.title = $('title').textContent;
@@ -1844,7 +1845,7 @@ function showCaveCoverage() {
   if (WORLD_CAVES && state.cut !== null && hires.index?.context?.caves === true && description.state === 'outside') {
     const key=`${Math.floor(center.x/64)},${Math.floor(center.z/64)}`;
     description={...description,state:'cave-prototype',text:hires.index.tiles.has(key)
-      ? 'Podzemní geometrie je v tomto regionu dostupná; další oblasti postupně doplňuje render celého světa.'
+      ? 'Podzemní geometrie je v tomto regionu dostupná.'
       : 'Mimo vykreslené podzemní regiony: zde zatím podzemní data nejsou.'};
   }
   let note = $('cave-coverage');

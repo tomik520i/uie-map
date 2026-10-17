@@ -806,7 +806,12 @@ function initViewer() {
 
 const raycaster = new THREE.Raycaster();
 let pendingGoto = null;
-function cancelPendingGoto() { pendingGoto?.cancel(); }
+function cancelPendingGoto() {
+  const wasPending = pendingGoto?.pending;
+  pendingGoto?.cancel();
+  // Once navigation changes, the old destination's loading notice is no longer current.
+  if (wasPending) $('goto-msg').hidden = true;
+}
 
 function terrainHeight(x, z) {
   const { min, max } = state.bounds;

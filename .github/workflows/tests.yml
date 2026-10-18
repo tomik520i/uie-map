@@ -37,7 +37,7 @@ jobs:
       - name: Nezávislé ověření kompletní jeskynní generace
         run: python -m unittest test_cave_release_verify test_cave_pair test_cave_pair_index
       - name: Rozpoznání dimenzí bez zápisu do světa
-        run: python -m unittest test_world_layout
+        run: python -m unittest test_world_layout test_uiemap_config
       - name: Retence a bezpečné publikování
         run: python -m unittest test_collision_world_retention test_collision_world_store test_collision_world_gc test_collision_gc test_collision_retention
       - name: Webový prohlížeč a HTTP rozhraní

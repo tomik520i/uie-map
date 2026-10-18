@@ -18,7 +18,7 @@
 
 | Bod | Stav | Podmínka dokončení |
 | --- | --- | --- |
-| 12. Jednotná konfigurace vlastního světa | **PLÁN — IMPLEMENTACE ČEKÁ** | Svět, katalog, výstup, port, pracovníci, paměť a diskové rozpočty v jednom validovaném konfiguračním souboru; žádné povinné cesty UIE. |
+| 12. Jednotná konfigurace vlastního světa | **ROZDĚLANÉ — VALIDACE HOTOVÁ** | Nezapisující náhled viz [KONFIGURACE.md](KONFIGURACE.md); napojení rendereru a webu čeká.  Svět, katalog, výstup, port, pracovníci, paměť a diskové rozpočty v jednom validovaném konfiguračním souboru; žádné povinné cesty UIE. |
 | 13. Více dimenzí | **ROZDĚLANÉ — INVENTÁŘ HOTOVÝ** | Read-only rozpoznání adresářů je popsané v [DIMENZE.md](DIMENZE.md); zapojení do rendereru a webu ještě čeká.  Vyhledání kandidátů a explicitní výběr dimenzí; oddělené identity, souřadnice, výstupy, fronty, kolize a jeskyně; přepínač na webu. Nether i modované adresáře, archivované světy výchozím stavem nezařazovat. |
 | 14. Vlastní modpack a katalog | **PLÁN — IMPLEMENTACE ČEKÁ** | Zdokumentovaný import prostředků uživatele, registry a metadata, rozšiřitelné adaptéry modelů a přehled podpory. Nepodporovaný blok musí být dohledatelný; nelze slibovat věrný automatický převod všech vlastních Java rendererů. |
 | 15. Jednotný program a automatický provoz | **PLÁN — IMPLEMENTACE ČEKÁ** | Jednotné příkazy konfigurace, kontroly prostředí, renderu, aktualizací, stavu a webu; obnova fronty, rozpočty a retence. Běžný provoz bez Minecraft klienta. Nejprve samostatná aplikace; případný serverový mod jako volitelný adaptér až po ověření jádra. |

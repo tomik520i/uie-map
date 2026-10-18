@@ -441,6 +441,8 @@ def publish_index(out, tiles, atlas_sha256, renderer_identity, *, verification_c
     """
     out = _owned(out)
     if type(record_history) is not bool:raise ValueError('record_history must be boolean')
+    from dimension_binding import check_context
+    check_context(out,context)
     if source is not None:
         if context is None:raise ValueError('source metadata requires context')
         source=_checked_source(source,tiles)

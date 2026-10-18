@@ -29,6 +29,8 @@ def tick(out,session,*,world,dimension,max_tiles=128,max_bytes=64*1024*1024,allo
     if shutil.disk_usage(out).free<MIN_FREE_BYTES:
         return {'state':'low-disk','published':False}
     raw=hs._read_index(out);doc=hs._parse_index(raw)
+    from dimension_binding import check_context
+    check_context(out,dict(world=world,dimension=dimension,caves=doc['caves']))
     if publish_cave_pairs and not doc['caves']:raise ValueError('Cave pairs require cave geometry')
     try:status_raw,_=hb._read(out/'status.json',64*1024)
     except FileNotFoundError:return {'state':'waiting-for-producer','published':False}

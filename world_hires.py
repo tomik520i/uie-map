@@ -542,7 +542,8 @@ def geometry_identity(catalog_identity, code, caves=False, cave_caps=False):
 
 def build(world: Path, catalog_dir: Path, out: Path, workers: int, max_jobs=None, center=(0, 0),
           *, immutable_prepare=False, caves=False, cave_caps=False, fair_schedule=False,
-          cave_store_budget_bytes=2*1024**3, cave_reserve_bytes=24*1024**3) -> dict:
+          cave_store_budget_bytes=2*1024**3, cave_reserve_bytes=24*1024**3,
+          world_id=None, dimension_key=None, dimension_path=None) -> dict:
     import reader
     from offline_catalog import Catalog
     world, out, catalog_dir = world.resolve(), out.resolve(), catalog_dir.resolve()
@@ -551,6 +552,11 @@ def build(world: Path, catalog_dir: Path, out: Path, workers: int, max_jobs=None
     if out == world or out.is_relative_to(world):
         raise HiresError("output must lie outside the world")
     check_render_mode(out, caves)
+    if any(v is not None for v in (world_id,dimension_key,dimension_path)):
+        if out==catalog_dir or out.is_relative_to(catalog_dir) or catalog_dir.is_relative_to(out):
+            raise HiresError('dimension output must be separate from catalog')
+    region_dir = resolve_region_source(world,out,world_id=world_id,dimension_key=dimension_key,
+                                       dimension_path=dimension_path,caves=caves)
     budget_report = None
     if type(fair_schedule) is not bool:
         raise HiresError('fair_schedule must be boolean')
@@ -563,7 +569,6 @@ def build(world: Path, catalog_dir: Path, out: Path, workers: int, max_jobs=None
         budget_report = inspect_budget(out,max_store_bytes=cave_store_budget_bytes)
         if budget_report['state'] != 'ready':
             raise HiresError('Cave budget blocked: '+','.join(budget_report['reasons']))
-    region_dir = world / "region"
     for sub in ("tiles", "jobs"):
         (out / sub).mkdir(parents=True, exist_ok=True)
     for name in ("atlas.png", "atlas-layout.json"):
@@ -713,6 +718,22 @@ LOCK_RETRY_SECONDS = 0.2
 MAX_LOCK_WAIT_SECONDS = 300
 
 
+def resolve_region_source(world,out,*,world_id=None,dimension_key=None,dimension_path=None,caves=False):
+    """Explicit opt-in only; existing legacy stores cannot be adopted as a dimension."""
+    import dimension_binding as binding
+    explicit=any(v is not None for v in (world_id,dimension_key,dimension_path))
+    if not explicit:
+        if (out/binding.NAME).exists() or (out/binding.NAME).is_symlink():
+            raise HiresError('Bound dimension store requires explicit world-id and dimension-key')
+        return world/'region'
+    if world_id is None or dimension_key is None:raise HiresError('world-id and dimension-key are required together')
+    expected=binding.make_binding(world=world,world_id=world_id,dimension=dimension_key,
+                                  dimension_path=dimension_path,mode='caves' if caves else 'surface')
+    out.mkdir(parents=True,exist_ok=True)
+    binding.ensure(out,expected,initialize=True)
+    return Path(expected['regionPath'])
+
+
 def _valid_lock_wait(value) -> float:
     if (isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
             or not 0 <= value <= MAX_LOCK_WAIT_SECONDS):
@@ -758,6 +779,9 @@ def main(argv=None) -> int:
     ap.add_argument("--world", required=True, type=Path)
     ap.add_argument("--catalog-dir", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument('--world-id',help='experimental dimension store: stable world identity; requires dimension-key')
+    ap.add_argument('--dimension-key',help='experimental dimension store: numeric key or x:name; fresh output required')
+    ap.add_argument('--dimension-path',help='dimension root relative to world, required for x:name; level.dat remains shared')
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--max-jobs", type=int)
     ap.add_argument("--center", default="0,0")
@@ -773,6 +797,12 @@ def main(argv=None) -> int:
                          "publisher tick; default 0 = skip at once as before; never waits without bound")
     a = ap.parse_args(argv)
     center = tuple(int(v) for v in a.center.split(","))
+    if any(v is not None for v in (a.world_id,a.dimension_key,a.dimension_path)):
+        if a.world_id is None or a.dimension_key is None:ap.error('world-id and dimension-key are required together')
+        target=a.out.resolve()
+        for source in (a.world.resolve(),a.catalog_dir.resolve()):
+            if target==source or target.is_relative_to(source) or source.is_relative_to(target):
+                ap.error('dimension output must be separate from world and catalog')
     a.out.mkdir(parents=True, exist_ok=True)
     lock = open(a.out / ".build.lock", "a")
     try:
@@ -792,6 +822,8 @@ def main(argv=None) -> int:
     try:
         extra = ({'fair_schedule':True,'cave_store_budget_bytes':a.cave_store_budget_mib*1024**2,
                   'cave_reserve_bytes':a.cave_reserve_gib*1024**3} if a.fair_schedule else {})
+        if any(v is not None for v in (a.world_id,a.dimension_key,a.dimension_path)):
+            extra.update(world_id=a.world_id,dimension_key=a.dimension_key,dimension_path=a.dimension_path)
         print(json.dumps(build(a.world, a.catalog_dir, a.out, a.workers, a.max_jobs, center,
                               immutable_prepare=a.prepare_immutable, caves=a.caves,cave_caps=a.cave_caps,**extra), indent=1))
         return 0

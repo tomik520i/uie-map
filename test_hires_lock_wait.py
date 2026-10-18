@@ -139,7 +139,7 @@ class LockWaitTests(unittest.TestCase):
         with patch.object(wh, 'build', side_effect=build):
             code, doc = self.run_main('--lock-wait-seconds', '5', '--prepare-immutable')
         self.assertEqual((code, doc), (0, {'state': 'done'}))
-        self.assertEqual(calls, [{'immutable_prepare': True}])
+        self.assertEqual(calls, [{'immutable_prepare': True, 'caves': False, 'cave_caps': False}])
 
 
 if __name__ == '__main__':

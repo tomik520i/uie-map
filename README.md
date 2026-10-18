@@ -8,6 +8,8 @@ UIE Map vytváří interaktivní webovou 3D mapu uloženého světa modovaného 
 
 Směřujeme k samostatnému programu s konfigurací světa, výběrem více dimenzí, automatickými aktualizacemi a úplným návodem. Volitelný Minecraft mod může později doplnit napojení na server. Tyto části ještě nejsou dokončené: [stav a plán vývoje](ROADMAP.md), [naměřené velikosti a orientační výpočty](KAPACITA.md).
 
+První samostatné nástroje pro jiné instalace už umožňují [rozpoznat dimenze](DIMENZE.md) a [zkontrolovat společnou konfiguraci](KONFIGURACE.md). Zatím jde o nezapisující náhled; napojení konfigurace na render a web čeká.
+
 ## Co už funguje
 
 - Čtení Anvil regionů, Forge registru bloků a metadat, včetně NotEnoughIDs (`Blocks16`).
@@ -16,7 +18,7 @@ Směřujeme k samostatnému programu s konfigurací světa, výběrem více dime
 - Načítání detailu v okolí pohledu a zjednodušený vzdálený terén s omezením paměti.
 - Neměnné publikované generace, průběžné aktualizace a stavové panely.
 - Diagnostika nepodporovaných bloků včetně názvů, ID, metadat a souřadnic.
-- Jeskynní pohled a postupný render podzemí celé hlavní dimenze.
+- Jeskynní pohled celé uložené hlavní dimenze: opravená generace byla 18. října ověřena a nasazena v ukázce (983 oblastí, 56 782 dlaždic).
 
 **Pro běžný render ani prohlížení nemusí běžet Minecraft klient.** Renderer čte data světa a používá předem připravený katalog modelů a textur. Příprava katalogu pro jiný modpack je samostatná práce; automatický import libovolných modů zatím není hotový.
 
@@ -26,11 +28,11 @@ Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. T
 
 - Podpora modovaných bloků je neúplná. Některé mají zjednodušený tvar či metadata; chybějící model může být fialový zástupný blok.
 - Kolize odvozené ze skutečných blokových dat se připravují pro celý svět. Tvary některých modovaných bloků zůstávají přibližné; mimo dostupná data může chůze používat přibližný terén.
-- Celosvětové jeskynní a kolizní exporty jsou dlouhé dávkové úlohy; stav ukázky se postupně mění.
+- Celosvětové exporty jsou dlouhé dávkové úlohy. Jeskynní průchod je dokončený, kolizní export pokračuje. Regiony pocházejí z různých okamžiků uložení hry.
 - Současný celosvětový export pokrývá hlavní dimenzi. Automatická správa dalších dimenzí a jejich přepínání na webu jsou plánované.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Oprava barev modovaných biomů je ve zdrojích, ale vyžaduje novou generaci dat. Zdrojový kód v tomto repozitáři proto nemusí přesně odpovídat nasazené ukázce.
-- Opravena byla také chyba náhradních názvů chybějících ID: souřadnice ve zprávě o chybě mohly přepsat jiný, známý blok v registru. Ověřená oprava se právě přepočítává v nové oddělené generaci; dosavadní veřejná data ještě mohou být ovlivněná.
+- Opravena byla také chyba náhradních názvů chybějících ID: souřadnice ve zprávě o chybě mohly přepsat jiný, známý blok v registru. Opravené jeskyně jsou nasazené; nový povrch je dokončený soukromě a čeká na sladěné přepnutí s navazujícími daty. Dosavadní veřejný povrch ještě může být ovlivněný.
 - Formáty dat a provozní rozhraní se mohou měnit. Obnova po skutečném restartu celého produkčního stroje zatím není kompletně ověřená.
 
 ## Jak je projekt sestavený

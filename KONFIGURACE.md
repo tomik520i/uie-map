@@ -86,3 +86,8 @@ Tento postup byl19.10. skutečně ověřen na odděleném kompletním exportu DI
 `python -B uiemap.py doctor /cesta/config.json` vrátí JSON se samostatným výsledkem každé kontroly a návratový kód 0 při splnění kontrol, jinak 2. Nic nerenderuje, nevytváří výstup a nespouští služby. Ověřuje čitelnost souborů katalogu, načtení kompilovaného katalogu, registr Forge v level.dat, plán vybraných dimenzí, rezervu místa, dostupnost uživatelského systemd a Node.js 18+. Dotazy na verze mají časový limit 10 sekund.
 
 `prerequisitesReady` znamená splněné uvedené předpoklady. Nejde o potvrzení správnosti všech regionů, obrazových souborů, modovaných modelů, Minecraft verze, volného portu ani dostupnosti všech cgroup controllerů. Automatický import jiného modpacku ještě není implementovaný. Kontrola vyhodnocuje render i web; na Windows proto oznámí chybějící Linux systemd i při dostupném Node. Žádný Minecraft klient není potřeba.
+
+
+### Příprava přenosného katalogu (rozpracované)
+
+`python -B catalog_import_plan.py --assets assets.json --layout atlas-layout.json` pouze kontroluje existující export metadat, bez zápisu. Zkontroluje šest stran, metadata 0–15, barvy včetně Java ARGB a UV včetně zrcadlení. Vypíše SHA vstupů a názvy textur mimo registrovaný atlas; takové názvy mohou být dynamické varianty Chisel s vlastními UV, automaticky se nezahazují. Ověřeno na exportu UIE: 6300 bloků a 100800 variant. PNG, shoda atlasu s exportem, vytvoření katalogu a import nového modpacku zatím čekají. Tento příkaz není dokončený importér.

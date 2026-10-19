@@ -39,6 +39,8 @@ import { contentHash, decodeVerifiedJson, diffEntries, generationBase, validateG
 import { sha256Hex } from './sha256.js';
 import { LodSwap } from './lod-swap.js';
 import { selectDistanceLod } from './lod-distance.js';
+import { loadMapView } from './map-view.mjs';
+import { mountDimensionMenu } from './dimension-menu.mjs';
 import { meshBytesFromCounts, validateLodChunk, validateLodManifest } from './lod-contract.js';
 
 const DATA_URL = './data/';
@@ -844,8 +846,8 @@ function gotoHeight(x, z) {
 function resetCamera() {
   cancelPendingGoto();
   const { min, max } = state.bounds;
-  const [cx, cy, cz] = [0, 1, 2].map((i) => (min[i] + max[i]) / 2);
-  const span = Math.max(max[0] - min[0], max[2] - min[2], 32);
+  const [cx, cy, cz] = state.mapView ? state.focus : [0, 1, 2].map((i) => (min[i] + max[i]) / 2);
+  const span = state.mapView ? 128 : Math.max(max[0] - min[0], max[2] - min[2], 32);
   const y = state.focus?.[1] ?? terrainHeight(cx, cz) ?? cy;
   controls.target.set(cx, y, cz);
   const fit = Math.max(1, 1 / camera.aspect);
@@ -1225,6 +1227,7 @@ function scheduleHiresPanel() {
   hiresPanelTimer = setTimeout(() => {
     hiresPanelTimer = null;
     if (state.stream) showStream(state.stream.getSnapshot());
+    else if (state.mapView) showStandaloneProgress();
   }, 250);
 }
 
@@ -1328,7 +1331,7 @@ function updateHires() {
 
 // Underground geometry is loaded only during a height cut, from its configured store.
 // It does not replace the public surface pointer or invent underground coverage.
-const WORLD_CAVES = new URLSearchParams(window.location?.search ?? '').get('worldCaves') !== '0';
+let WORLD_CAVES = new URLSearchParams(window.location?.search ?? '').get('worldCaves') !== '0';
 function desiredHiresBase(){return `${DATA_URL}${WORLD_CAVES&&HIRES_IMMUTABLE&&state.cut!==null?'cave-geometry':'hires'}/`;}
 let worldCaves = null;
 const worldCaveMeshes = new Map();
@@ -1392,6 +1395,7 @@ async function loadHiresIndex() {
       // Pointer + content-addressed index, both bodies inside this timeout; an unchanged pointer keeps everything.
       index = await loadImmutableHiresIndex({ baseUrl: sourceBase, sha256Hex, current:hires.sourceBase===sourceBase?hires.index:null, expectedWorld: state.mapIdentity,
         fetch: (url, init) => fetch(url, { ...init, signal: controller.signal }) });
+      if (state.mapView && index.context?.caves !== false) throw new Error('Samostatný povrch vyžaduje povrchovou geometrii.');
       if(sourceBase!==desiredHiresBase())return;
       if(sourceBase.endsWith('/cave-geometry/')&&index.context?.caves!==true)throw new Error('Podzemní úložiště neobsahuje podzemní geometrii.');
       if (index === hires.index) return;
@@ -1418,10 +1422,12 @@ async function loadHiresIndex() {
       return;
     }
     showHiresPublication(index);
+    if (state.mapView) scheduleHiresPanel();
     showCaveCoverage();
     updateHires();
   } catch (err) {
     console.warn('hires index:', err);
+    if (state.mapView && !hires.index) setStatus('error', 'Dimenzi nelze načíst', [String(err.message)]);
   } finally {
     clearTimeout(timer);
     hires.indexLoading = false;
@@ -1439,7 +1445,7 @@ function showHiresPublication(index) {
   }
   // Detail generation refreshes must not relabel the loaded whole-world surface as a sample.
   const publication = describeHiresPublication(index, time => fmtDate.format(new Date(time)));
-  $('title').textContent = publication?.title ?? 'UIE · mapa světa';
+  $('title').textContent = state.mapView?.title ?? publication?.title ?? 'UIE · mapa světa';
   document.title = $('title').textContent;
   if (publication) {
     let note = $('hires-publication');
@@ -1570,7 +1576,7 @@ async function loadPlayers(force = false) {
     return;   // keep the last valid data
   }
   try {
-    players.list = playersInDimension(parsePlayers(doc).players, 0);
+    players.list = playersInDimension(parsePlayers(doc).players, Number(state.mapIdentity?.dimension ?? 0));
   } catch (err) {
     console.error(err);
     return;
@@ -2659,13 +2665,64 @@ function startRevisionWatcher(revision) {
   state.watcher.start();
 }
 
+function showStandaloneProgress() {
+  if (!hires.index) return;
+  const s = hiresStats();
+  $('chunks').textContent = `${s.loaded} / ${s.wanted} dlaždic`;
+  $('triangles').textContent = fmtNumber.format(s.triangles);
+  $('geometry-memory').textContent = geometryMemoryText(0, s.bytes);
+  $('retry-chunks').hidden = s.failed === 0;
+  setProgress(s.loading ? s.loaded : 0, s.loading ? s.wanted : 0);
+  setStatus(s.failed ? 'warn' : s.loading ? 'loading' : 'ok',
+    `${s.loading ? 'Načítám dimenzi' : s.failed ? 'Dimenze načtena částečně' : 'Dimenze načtena'} · ${s.loaded} / ${s.wanted} dlaždic`);
+}
+
+function startStandaloneView(view) {
+  if (!HIRES_IMMUTABLE) throw new DataError('Samostatná dimenze vyžaduje neměnné publikování.');
+  state.mapView = view;
+  state.mapIdentity = { world: view.world, dimension: view.dimension };
+  state.bounds = view.bounds;
+  state.focus = view.focus;
+  state.cut = null;
+  state.cutRequest = null;
+  WORLD_CAVES = false; // UIE_MAP_VIEW1 currently describes a surface-only store.
+  $('title').textContent = view.title;
+  document.title = view.title;
+  const { min, max } = view.bounds;
+  $('bounds').previousElementSibling.textContent = `Dimenze ${view.dimension}`;
+  $('bounds').textContent = `X ${min[0]} … ${max[0]} · Z ${min[2]} … ${max[2]} · Y ${min[1]} … ${max[1]}`;
+  $('render').hidden = true;
+  $('cov-rendered').closest('section').hidden = true;
+  for (const id of ['opt-cut', 'cut-level', 'opt-cut-cap', 'opt-overview', 'opt-players']) $(id).disabled = true;
+  const note = document.createElement('p'); note.className = 'note';
+  note.textContent = `Samostatný povrch dimenze ${view.dimension}. Jeskyně, hráči a bloková data chůze zde zatím nejsou připojené; chůze používá přibližnou geometrii.`;
+  $('bounds').closest('section').append(note);
+  resetCamera();
+  enableNavigation();
+  startFlyMode();
+  applyDisplayOptions();
+  setStatus('loading', 'Načítám povrch dimenze…');
+  startHires();
+}
+
 async function main() {
   // Experimental LOD only on explicit request; everything else behaves as before.
   state.lodOptIn = new URLSearchParams(window.location?.search ?? '').get('lod') === '1';
   state.cutRequest = new URLSearchParams(window.location?.search ?? '').get('cut');
   wireUi();
   initViewer();
+  const menuController = new AbortController();
+  const menuTimer = setTimeout(() => menuController.abort(), 10000);
+  mountDimensionMenu({ fetch, document, location: window.location, signal: menuController.signal })
+    .catch(error => console.warn('dimension menu:', error))
+    .finally(() => clearTimeout(menuTimer));
   setStatus('loading', 'Načítám manifest…');
+  const viewController = new AbortController();
+  const viewTimer = setTimeout(() => viewController.abort(), TIMEOUT_MS.manifest);
+  let view;
+  try { view = await loadMapView(fetch, `${DATA_URL}map-view.json`, viewController.signal); }
+  finally { clearTimeout(viewTimer); }
+  if (view) { startStandaloneView(view); return; }
   const revision = await bootRevision();
   state.mapIdentity = revision ? {world:revision.world,dimension:revision.dimension} : null;
   let manifest;

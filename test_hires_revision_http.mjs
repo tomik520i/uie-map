@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import vm from 'node:vm';
 import path from 'node:path';
 import {gzipSync} from 'node:zlib';
-const source=readFileSync(new URL('./server.mjs',import.meta.url),'utf8');
+const source=readFileSync(new URL('./map-handler.mjs',import.meta.url),'utf8');
 const fn=source.slice(source.indexOf('async function serveHires('),source.indexOf('async function serveOverviewPointer('));
 test('mutable tile path never responds immutable with bytes of another revision',async()=>{
  let bytes=gzipSync('old geometry');

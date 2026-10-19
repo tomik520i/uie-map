@@ -79,3 +79,10 @@ python uiemap.py serve uie-map.json --main-dimension 0 --apply
 Pro více povrchových dimenzí nejprve dokončete `render --apply` pro každou dimenzi uvedenou v konfiguraci. `serve` vyžaduje publikované výstupy všech vybraných dimenzí; chybějící či neodpovídající data nezamění za hlavní svět. Výchozí dimenzi určuje `--main-dimension`, ostatní se objeví v přepínači. Katalog je ověřen podle trvalých vazeb a SHA indexů; web následně ověřuje vlastní přenosy. Výstupní cesty z konfigurace není nutné ručně kopírovat do proměnných prostředí.
 
 Tento postup byl19.10. skutečně ověřen na odděleném kompletním exportu DIM42: generovaný web se otevřel, zobrazil terén a umožnil létání; žádná data hlavní mapy nepřebíral. Není to ještě ověření čisté instalace na jiném modpacku. Automatické aktualizační služby, retence, kolize a caves musí zatím používat samostatné provozní nástroje.
+
+
+## Kontrola před spuštěním
+
+`python -B uiemap.py doctor /cesta/config.json` vrátí JSON se samostatným výsledkem každé kontroly a návratový kód 0 při splnění kontrol, jinak 2. Nic nerenderuje, nevytváří výstup a nespouští služby. Ověřuje čitelnost souborů katalogu, načtení kompilovaného katalogu, registr Forge v level.dat, plán vybraných dimenzí, rezervu místa, dostupnost uživatelského systemd a Node.js 18+. Dotazy na verze mají časový limit 10 sekund.
+
+`prerequisitesReady` znamená splněné uvedené předpoklady. Nejde o potvrzení správnosti všech regionů, obrazových souborů, modovaných modelů, Minecraft verze, volného portu ani dostupnosti všech cgroup controllerů. Automatický import jiného modpacku ještě není implementovaný. Kontrola vyhodnocuje render i web; na Windows proto oznámí chybějící Linux systemd i při dostupném Node. Žádný Minecraft klient není potřeba.

@@ -5,6 +5,7 @@ from pathlib import Path
 import uiemap_config
 import uiemap_render
 import uiemap_serve
+import uiemap_doctor
 
 
 def main(argv=None):
@@ -15,6 +16,8 @@ def main(argv=None):
     commands=parser.add_subparsers(dest='command',required=True)
     check=commands.add_parser('check',help='Validate configuration without writing or starting processes')
     check.add_argument('config',type=Path)
+    doctor=commands.add_parser('doctor',help='Report missing prerequisites without rendering or starting services')
+    doctor.add_argument('config',type=Path)
     render=commands.add_parser('render',help='Plan or run one configured surface dimension (Linux systemd)')
     render.add_argument('config',type=Path);render.add_argument('--dimension',required=True)
     render.add_argument('--apply',action='store_true',help='Actually run render and publication')
@@ -23,6 +26,7 @@ def main(argv=None):
     serve.add_argument('--apply',action='store_true',help='Write web configuration and start Node in foreground')
     args=parser.parse_args(argv)
     if args.command=='check':return uiemap_config.main([str(args.config)])
+    if args.command=='doctor':return uiemap_doctor.main([str(args.config)])
     if args.command=='render':
         return uiemap_render.main([str(args.config),'--dimension',args.dimension]+(['--apply'] if args.apply else []))
     return uiemap_serve.main([str(args.config),'--main-dimension',args.main_dimension]+(['--apply'] if args.apply else []))

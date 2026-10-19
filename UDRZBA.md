@@ -38,7 +38,7 @@ Exportér ve výchozím stavu nadále odmítá úložiště se zapnutým GC. Nov
 
 Ověření zahrnuje jednotkové testy a oddělené kopie skutečných dat: blokování zámkem, výchozí dry-run bez zápisu ledgeru a všechny tři fáze se simulovaným stárnutím. Živé soubory se při těchto testech nemazaly.
 
-## Opakované aktualizace kolizí — ověřeno soukromě
+## Opakované aktualizace kolizí — nasazeno v ukázce
 
 `collision_world_watch.py` opakuje celý ověřovaný průchod exportéru. Nezměněné oblasti využijí dřívější report, ale znovu se kontrolují jejich vstupy a publikované objekty. Proces uchovává ověřovací cache mezi průchody; při restartu se cache vždy ověří znovu.
 
@@ -55,4 +55,8 @@ Výchozí `--passes 1` provede jediný průchod. Explicitní nula znamená nepř
 
 Vlastní zámek brání druhému koordinátoru. Obsazený exportní zámek vede k čekání bez přepsání stavu probíhajícího exportu. Nedostatek disku proces zastaví; neprovádí automatické mazání. Chybové oblasti zůstávají v reportu a další průchod je může zkusit znovu. Částečný poslední průchod vrací kód2; druhý koordinátor kód3. Už aktivovaný světový GC vyžaduje `--allow-world-gc`, který ho sám nezapíná.
 
-**V ukázce tento koordinátor ještě není nasazen.** Ověřeno 26 linuxovými testy a dvěma skutečnými průchody nad kopií 64dlaždicového vzorku: bez nového renderování, bez změny indexu a bez změny originálu. Není to důkaz výkonu průběžných aktualizací celého světa. Právě běžící první export používá své původní zmrazené vydání.
+**Koordinátor je v ukázce nasazený od18.10.** Následný celý průchod932oblastmi byl ověřen bez chyb.19.10. byla nasazena optimalizace nezměněných oblastí; její celý běh ještě měříme.
+
+Pokud již index obsahuje přesně stejné páry pro právě kontrolovanou oblast, `publish_region` ověří jen tyto páry, znovu zkontroluje ukazatel generace a nic nepublikuje. Výsledek výslovně uvádí `verificationScope: updates-only` a `published: false`: není to audit všech ostatních oblastí. Poškozený soubor dané oblasti je nadále odmítnut. Změněné páry nebo odstraňování odkazů procházejí původním úplným ověřením `publish_incremental` včetně publikačního žurnálu.
+
+Optimalizace prošla91linuxovými testy, dvěma skutečnými průchody nad oddělenou kopií64dlaždicového vzorku a kontrolou64párů z úplného živého indexu bez zápisu. První ověření tohoto výběru trvalo přibližně1,09s, opakování s cache0,48s. Jde o měření jednoho výběru, nikoli odhad doby celého světa. Nasazení proběhlo mezi průchody; web ani herní server se nerestartovaly.

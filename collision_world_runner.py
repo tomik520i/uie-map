@@ -105,7 +105,7 @@ def check_gc_profile(out,allow_world_gc=False):
 
 def run_pass(*,out,world,hires_store,tools,budget_bytes=30*1024**3,min_free_bytes=24*1024**3,
              max_regions=None,only_regions=None,cache=None,clock=time.time,stage_fn=region.stage_region,
-             check_fn=region.accepted_updates,publish_fn=publisher.publish_incremental,
+             check_fn=region.accepted_updates,publish_fn=publisher.publish_region,
              disk_free=lambda p:shutil.disk_usage(p).free,allow_world_gc=False):
     """Caller holds out/.export.lock. Returns explicit complete/partial/budget stop.
 

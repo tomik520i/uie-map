@@ -344,6 +344,45 @@ def publish_incremental(store, *, expected_index, updates, removals, cache: Pair
     return dict(result, unchanged=False)
 
 
+def publish_region(store, *, expected_index, updates, removals, cache, budget, now=None):
+    """Check an unchanged region without republishing or auditing unrelated regions.
+
+    Caller still holds the export lock and independently accepts this region's
+    source report. This is NOT a whole-index audit: unchanged results explicitly
+    state verificationScope='updates-only'. Any changed mapping/removal goes through
+    the original full publication gates. No index, pointer or history is written
+    by the fast path, including after process restart with a cold proof cache.
+    """
+    store = _check_store(store)
+    if not isinstance(updates, dict) or not isinstance(removals, (set, frozenset)):
+        raise StoreError('updates must be a dict and removals a set')
+    for key, pair_sha in updates.items():
+        _check_key(key)
+        _check_sha(pair_sha, 'update pair hash')
+    for key in removals:
+        _check_key(key)
+    if set(updates) & set(removals):
+        raise StoreError('a tile cannot be updated and removed in the same publication')
+    if expected_index is not None:
+        _check_sha(expected_index, 'expected index hash')
+        _cas(store, expected_index)
+        previous = _read_index(store, expected_index)
+        if updates and not removals and all(previous.get(k) == v for k, v in updates.items()):
+            if len(previous) > cache.max_entries:
+                raise StoreError('proof cache capacity is smaller than the index')
+            cache.retain(store, previous)
+            bytes_read = 0
+            for key in sorted(updates):
+                bytes_read += cache.verify(store, key, updates[key], budget)
+            _cas(store, expected_index)
+            _recheck(cache, store, updates)
+            return dict(indexSha256=expected_index, entries=len(previous), removed=0,
+                        updated=len(updates), bytesRead=bytes_read, reads=budget.reads,
+                        unchanged=True, verificationScope='updates-only', published=False)
+    return publish_incremental(store, expected_index=expected_index, updates=updates,
+                               removals=removals, cache=cache, budget=budget, now=now)
+
+
 def _recheck(cache, store, merged):
     """Every proof still matches its files (lstat only); otherwise retry later, never publish or report success."""
     if os.name != 'posix':

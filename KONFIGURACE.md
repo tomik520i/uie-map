@@ -1,6 +1,6 @@
-# Náhled společné konfigurace
+# Společná konfigurace a spuštění povrchového renderu
 
-**HOTOVO:** nezapisující validace a rozdělení výstupních cest. **ČEKÁ:** napojení rendereru, publisheru, kolizí, jeskyní a webového serveru. Příkaz níže nic nespouští a nevytváří adresáře. Výsledek proto výslovně obsahuje `renderReady: false`.
+**HOTOVO:** nezapisující validace a rozdělení výstupních cest. Nový příkaz `uiemap_render.py` propojuje vybranou povrchovou dimenzi s rendererem a publisherem. **ČEKÁ:** automatické nastavení webového katalogu, kolize a jeskyně z této konfigurace. Příkaz `uiemap_config.py` níže nadále nic nespouští a nevytváří adresáře. Jeho výsledek proto výslovně obsahuje `renderReady: false`.
 
 Příklad `uie-map.json` pro vlastní instalaci:
 
@@ -35,3 +35,27 @@ Validace odmítá překrytí výstupu se světem či katalogem včetně jejich n
 `surface` a `caves` označují zamýšlený režim. Nether se stropem vyžaduje další práci; `surface` pro dimenzi-1 proto zobrazí varování a zvláštní režim `ceiling` ještě není podporovaný. Přijetí konfigurace neznamená dokončenou podporu renderu dimenze.
 
 Ověřeno19Linux testy (konfigurace a rozpoznání dimenzí), na Windows17prošlo a2POSIXkontroly byly přeskočené. Skutečný CLI náhled na UIE ověřil tři oddělené dimenze a společný registr, aniž vytvořil výstupní adresář nebo spustil render.
+
+## Spuštění jedné povrchové dimenze
+
+Nejprve zkontrolujte plán konkrétní dimenze:
+
+```sh
+python uiemap_render.py uie-map.json --dimension 0
+```
+
+Bez `--apply` se nic nezapisuje. Plán zahrnuje zdroj světa, katalog, oddělený výstup, celý render vybrané dimenze a limity. Stávající výstup musí mít odpovídající trvalou vazbu; cizí nebo starý nepřiřazený adresář příkaz nepřevezme.
+
+Na Linuxu s dostupným uživatelským systemd spustíte render a navazující publikování:
+
+```sh
+python uiemap_render.py uie-map.json --dimension 0 --apply
+```
+
+Příkaz čeká na dokončení a vypíše jméno své jednotky `uiemap-render-….service`. `memoryMiB` omezuje celou skupinu procesů včetně pracovníků. Rezerva `minFreeGiB` se kontroluje před startem a přibližně každou sekundu během práce; překročení rezervy ukončí jednotku a její potomky. Jde o hlídání volného místa, nikoli pevnou diskovou kvótu. Přerušení příkazu pomocí Ctrl+C zastaví jeho jednotku.
+
+Změna konfiguračního souboru mezi plánem a startem pracovníka je odmítnuta. Publikování proběhne až po dokončeném plánu bez chyb; výsledný JSON musí obsahovat `published: true` a konkrétní `indexSha256`. Při chybě zůstávají rozpracovaná data pro opravu a další pokus. Web se automaticky nepřepíná ani nerestartuje; ruční připojení hotového výstupu popisuje [DIMENZE.md](DIMENZE.md).
+
+Tento příkaz zatím přijímá pouze `surface`, odmítá Nether `-1` kvůli nehotovému řešení stropu a nespouští další dimenze automaticky. Import katalogu z modpacku je samostatná nedokončená část. Na Windows je dostupný náhled, nikoli spuštění přes systemd.
+
+Ověření19.10.: celý skutečný povrch DIM42 spuštěný přes `--apply`,161dlaždic a publikování za přibližně65s; všech161SHA ověřeno.28Linux testů PASS. Veřejná data ani služby tímto testem nebyly přepnuté.

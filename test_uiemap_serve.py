@@ -1,0 +1,59 @@
+import hashlib,json,tempfile,unittest
+from pathlib import Path
+import dimension_binding as binding
+import uiemap_config as config
+import uiemap_serve as serve
+
+
+class WebConfigTests(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name).resolve()
+        for name in ('world/region','world/DIM42/region','catalog'):(self.root/name).mkdir(parents=True)
+        self.doc=dict(format='UIEMAP_CONFIG1',world=dict(id='mine',path='world'),catalog='catalog',out='out',
+          dimensions=[dict(key=k,title='Svět '+k,mode='surface') for k in ('0','42')])
+        self.file=self.root/'config.json';self.file.write_text(json.dumps(self.doc))
+        self.stores={}
+        for row in config.load(self.file)['dimensions']:
+            store=Path(row['outputs']['surface']);(store/'indexes').mkdir(parents=True);self.stores[row['key']]=store
+            expected=binding.make_binding(world=self.root/'world',world_id='mine',dimension=row['key'],mode='surface')
+            (store/binding.NAME).write_bytes(binding.canonical(expected))
+            self.index(store,row['key'])
+    def index(self,store,dimension):
+        doc=dict(context=dict(world='mine',dimension=dimension,caves=False),tiles={'-1,0':'a'*64,'0,1':'b'*64})
+        raw=json.dumps(doc).encode();sha=hashlib.sha256(raw).hexdigest()
+        (store/'indexes'/(sha+'.json')).write_bytes(raw);(store/'current.json').write_text(json.dumps(dict(indexSha256=sha)))
+    def test_preview_no_writes_and_isolated_menu(self):
+        before=set(self.root.rglob('*'));plan=serve.snapshot(self.file,'0')
+        self.assertEqual(before,set(self.root.rglob('*')));self.assertTrue(plan['readOnly'])
+        self.assertEqual(plan['environment']['UIE_HIRES_STORE'],str(self.stores['0']))
+        menu=plan['files']['dimensions.json'];self.assertEqual(len(menu['views']),1)
+        self.assertEqual(menu['views'][0]['hiresStore'],str(self.stores['42']))
+        self.assertNotIn('UIE_GENERATION_STORE',plan['environment'])
+        view=next(v for v in plan['files'].values() if v.get('dimension')=='42')
+        self.assertEqual(view['bounds'],dict(min=[-64,0,0],max=[64,256,128]))
+    def test_snapshot_repeat_is_immutable_and_tampering_refused(self):
+        plan=serve.snapshot(self.file,'0');stage=serve.write_snapshot(plan)
+        before={p.name:p.read_bytes() for p in stage.iterdir()}
+        self.assertEqual(serve.write_snapshot(plan),stage)
+        self.assertEqual(before,{p.name:p.read_bytes() for p in stage.iterdir()})
+        (stage/'dimensions.json').write_text('{}')
+        with self.assertRaises(ValueError):serve.write_snapshot(plan)
+    def test_world_identity_and_hash_mismatch_refused(self):
+        self.index(self.stores['42'],'0')
+        with self.assertRaisesRegex(ValueError,'different'):serve.snapshot(self.file,'0')
+        self.index(self.stores['42'],'42')
+        pointer=json.loads((self.stores['42']/'current.json').read_text())
+        (self.stores['42']/'indexes'/(pointer['indexSha256']+'.json')).write_text('{}')
+        with self.assertRaisesRegex(ValueError,'hash'):serve.snapshot(self.file,'0')
+    def test_unknown_main_and_unpublished_dimension_refused(self):
+        with self.assertRaisesRegex(ValueError,'Main'):serve.snapshot(self.file,'99')
+        (self.stores['42']/'current.json').unlink()
+        with self.assertRaises(FileNotFoundError):serve.snapshot(self.file,'0')
+    def test_main_can_be_nonzero_and_title_changes_new_snapshot(self):
+        first=serve.snapshot(self.file,'42')
+        self.assertEqual(first['environment']['UIE_HIRES_STORE'],str(self.stores['42']))
+        self.doc['dimensions'][1]['title']='Jiný název';self.file.write_text(json.dumps(self.doc))
+        self.assertNotEqual(first['directory'],serve.snapshot(self.file,'42')['directory'])
+
+
+if __name__=='__main__':unittest.main()

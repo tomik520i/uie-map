@@ -1,6 +1,6 @@
 # Společná konfigurace a spuštění povrchového renderu
 
-**HOTOVO:** nezapisující validace a rozdělení výstupních cest. Nový příkaz `uiemap_render.py` propojuje vybranou povrchovou dimenzi s rendererem a publisherem. **ČEKÁ:** automatické nastavení webového katalogu, kolize a jeskyně z této konfigurace. Příkaz `uiemap_config.py` níže nadále nic nespouští a nevytváří adresáře. Jeho výsledek proto výslovně obsahuje `renderReady: false`.
+**HOTOVO / OVĚŘENO:** nezapisující validace, oddělené výstupy, spuštění povrchového renderu a publisheru i sestavení webového katalogu a spuštění webu. **ČEKÁ:** kolize a jeskyně z této konfigurace, trvalá automatizace aktualizací a import katalogu z jiného modpacku. Příkaz `uiemap_config.py` níže nadále nic nespouští a nevytváří adresáře. Jeho výsledek proto výslovně obsahuje `renderReady: false`.
 
 Příklad `uie-map.json` pro vlastní instalaci:
 
@@ -59,3 +59,23 @@ Změna konfiguračního souboru mezi plánem a startem pracovníka je odmítnuta
 Tento příkaz zatím přijímá pouze `surface`, odmítá Nether `-1` kvůli nehotovému řešení stropu a nespouští další dimenze automaticky. Import katalogu z modpacku je samostatná nedokončená část. Na Windows je dostupný náhled, nikoli spuštění přes systemd.
 
 Ověření19.10.: celý skutečný povrch DIM42 spuštěný přes `--apply`,161dlaždic a publikování za přibližně65s; všech161SHA ověřeno.28Linux testů PASS. Veřejná data ani služby tímto testem nebyly přepnuté.
+
+## Jednotný příkaz: od konfigurace k webu
+
+Předpoklady: Python3.12+, Node.js22+, pro render Linux s uživatelským systemd; vlastní svět Minecraft1.7.10 a odpovídající připravený katalog. Automatický import modpacku zatím není součástí tohoto postupu.
+
+Pro první pokus ponechte v konfiguraci pouze jednu existující povrchovou dimenzi. Pro hlavní svět použijte `key: "0"`, `mode: "surface"`; nastavte existující cesty světa a katalogu a nový výstup mimo oba zdroje. Port webu musí být volný.
+
+```sh
+python uiemap.py check uie-map.json
+python uiemap.py render uie-map.json --dimension 0
+python uiemap.py render uie-map.json --dimension 0 --apply
+python uiemap.py serve uie-map.json --main-dimension 0
+python uiemap.py serve uie-map.json --main-dimension 0 --apply
+```
+
+`check` a oba příkazy bez `--apply` jsou nezapisující. `render --apply` skutečně zpracuje celou vybranou dimenzi a publikuje výsledek. `serve --apply` z dokončených výstupů vytvoří vlastní neměnný webový katalog a spustí Node v popředí. Otevřete adresu a port z pole `web`; host `127.0.0.1` je dostupný jen na daném stroji. Příkaz nepřepisuje PM2 ani běžící služby.
+
+Pro více povrchových dimenzí nejprve dokončete `render --apply` pro každou dimenzi uvedenou v konfiguraci. `serve` vyžaduje publikované výstupy všech vybraných dimenzí; chybějící či neodpovídající data nezamění za hlavní svět. Výchozí dimenzi určuje `--main-dimension`, ostatní se objeví v přepínači. Katalog je ověřen podle trvalých vazeb a SHA indexů; web následně ověřuje vlastní přenosy. Výstupní cesty z konfigurace není nutné ručně kopírovat do proměnných prostředí.
+
+Tento postup byl19.10. skutečně ověřen na odděleném kompletním exportu DIM42: generovaný web se otevřel, zobrazil terén a umožnil létání; žádná data hlavní mapy nepřebíral. Není to ještě ověření čisté instalace na jiném modpacku. Automatické aktualizační služby, retence, kolize a caves musí zatím používat samostatné provozní nástroje.

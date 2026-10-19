@@ -1,6 +1,6 @@
 # Směr projektu a stav vývoje
 
-**Cíl: stáhnout program, nastavit vlastní svět Minecraft 1.7.10 a modpack, vybrat dimenze a nechat automaticky vytvářet webovou mapu.** UIE je první ověřovací svět, nikoli konečný rozsah produktu. Stav k 18. 10. 2026; níže uvedené plánované funkce zatím nejsou příslibem dostupné instalace.
+**Cíl: stáhnout program, nastavit vlastní svět Minecraft 1.7.10 a modpack, vybrat dimenze a nechat automaticky vytvářet webovou mapu.** UIE je první ověřovací svět, nikoli konečný rozsah produktu. Stav k 19. 10. 2026; níže uvedené plánované funkce zatím nejsou příslibem dostupné instalace.
 
 ## Nejprve dokončit současnou sadu
 
@@ -18,10 +18,10 @@
 
 | Bod | Stav | Podmínka dokončení |
 | --- | --- | --- |
-| 12. Jednotná konfigurace vlastního světa | **ROZDĚLANÉ — VALIDACE HOTOVÁ** | Nezapisující náhled viz [KONFIGURACE.md](KONFIGURACE.md); napojení rendereru a webu čeká.  Svět, katalog, výstup, port, pracovníci, paměť a diskové rozpočty v jednom validovaném konfiguračním souboru; žádné povinné cesty UIE. |
-| 13. Více dimenzí | **ROZDĚLANÉ — EXPERIMENTÁLNÍ CLI OVĚŘENÉ** | Rozpoznání a oddělený render popisuje [DIMENZE.md](DIMENZE.md). Skutečné modované dimenze, oddělené fronty, kolize a jeskyně a přepínač na webu ještě čekají. Ověření CLI proběhlo na umělém světě se shodnými souřadnicemi různých dimenzí. |
+| 12. Jednotná konfigurace vlastního světa | **POVRCHOVÝ RENDER A WEB HOTOVÉ / OVĚŘENÉ; CELEK ROZDĚLANÝ** | [KONFIGURACE.md](KONFIGURACE.md): skutečný render, publikování, generovaný katalog a web DIM42 ověřené. Kolize, caves a automatické aktualizační služby z konfigurace zbývají. |
+| 13. Více dimenzí | **PŘEPÍNAČ A DIM42 POVRCH HOTOVO / NASAZENO; ZBYTEK ROZDĚLANÝ** | [DIMENZE.md](DIMENZE.md): skutečná DIM42 kompletně vykreslená, webový přepínač ověřený veřejně. Další dimenze, jejich kolize a jeskyně ještě čekají. |
 | 14. Vlastní modpack a katalog | **PLÁN — IMPLEMENTACE ČEKÁ** | Zdokumentovaný import prostředků uživatele, registry a metadata, rozšiřitelné adaptéry modelů a přehled podpory. Nepodporovaný blok musí být dohledatelný; nelze slibovat věrný automatický převod všech vlastních Java rendererů. |
-| 15. Jednotný program a automatický provoz | **PLÁN — IMPLEMENTACE ČEKÁ** | Jednotné příkazy konfigurace, kontroly prostředí, renderu, aktualizací, stavu a webu; obnova fronty, rozpočty a retence. Běžný provoz bez Minecraft klienta. Nejprve samostatná aplikace; případný serverový mod jako volitelný adaptér až po ověření jádra. |
+| 15. Jednotný program a automatický provoz | **CLI HOTOVÉ / OVĚŘENÉ; AUTOMATIZACE ROZDĚLANÁ** | `python uiemap.py check/render/serve` již sjednocuje konfiguraci, povrchový render a web. Automatické aktualizace, stav služeb, retence a distribuční balíček zbývají. Běžný provoz bez Minecraft klienta. |
 | 16. Distribuce a úplný návod | **PLÁN — IMPLEMENTACE ČEKÁ** | Instalace na čistém podporovaném systému, ukázková konfigurace bez tajných údajů, postup pro vlastní svět/modpack/dimenze, aktualizace, záloha a řešení chyb. Distribuční licence a práva k herním prostředkům musí být vyřešeny před vydáním balíčku. |
 | 17. Přenositelnost a kapacitní plánování | **ROZDĚLANÁ DOKUMENTACE / IMPLEMENTACE ČEKÁ** | Test na druhém nezávislém světě a modpacku, více dimenzí se shodnými souřadnicemi bez kolizí, malý benchmark a odhad disku/času před plným renderem. |
 

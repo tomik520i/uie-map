@@ -8,7 +8,7 @@ UIE Map vytváří interaktivní webovou 3D mapu uloženého světa modovaného 
 
 Směřujeme k samostatnému programu s konfigurací světa, výběrem více dimenzí, automatickými aktualizacemi a úplným návodem. Volitelný Minecraft mod může později doplnit napojení na server. Tyto části ještě nejsou dokončené: [stav a plán vývoje](ROADMAP.md), [naměřené velikosti a orientační výpočty](KAPACITA.md).
 
-První samostatné nástroje pro jiné instalace už umožňují [rozpoznat dimenze a experimentálně je odděleně renderovat přes CLI](DIMENZE.md) a [zkontrolovat společnou konfiguraci](KONFIGURACE.md). Napojení konfigurace na spouštění renderu a web čeká.
+Jednotný příkaz `python uiemap.py` už nabízí kontrolu konfigurace, spuštění povrchového renderu a webu z hotových výstupů. Postup pro vlastní připravený katalog najdete v [KONFIGURACE.md](KONFIGURACE.md); stav jednotlivých dimenzí v [DIMENZE.md](DIMENZE.md). Import libovolného modpacku a úplná automatizace provozu stále čekají.
 
 ## Co už funguje
 
@@ -30,7 +30,7 @@ Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. T
 - Podpora modovaných bloků je neúplná. Některé mají zjednodušený tvar či metadata; chybějící model může být fialový zástupný blok.
 - Bloková data kolizí celé hlavní dimenze jsou nasazená. Tvary některých modovaných bloků zůstávají přibližné; mimo dostupná nebo odpovídající data může chůze používat přibližný terén.
 - Celosvětové exporty jsou dlouhé dávkové úlohy. První úplné průchody povrchu, jeskyní a kolizí jsou dokončené. Regiony pocházejí z různých okamžiků uložení hry. Aktualizace kolizí zatím prochází celý svět; není to okamžitá fronta změn.
-- Současný celosvětový export pokrývá hlavní dimenzi. Automatická správa dalších dimenzí a jejich přepínání na webu jsou plánované.
+- Veřejná ukázka nabízí hlavní dimenzi a povrch DIM42 s přepínačem. Další dimenze, jejich blokové kolize a jeskynní režim zatím nejsou dokončené.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Nová generace obsahuje opravy barev modovaných biomů a registru bloků. Experimentální části zdrojového kódu nemusí odpovídat nasazenému provozu.
 - Opravena byla chyba náhradních názvů chybějících ID: souřadnice ve zprávě o chybě mohly přepsat jiný, známý blok v registru. Přepočítaný povrch, jeskyně i odpovídající kolize jsou již nasazené.

@@ -91,3 +91,17 @@ Tento postup byl19.10. skutečně ověřen na odděleném kompletním exportu DI
 ### Příprava přenosného katalogu (rozpracované)
 
 `python -B catalog_import_plan.py --assets assets.json --layout atlas-layout.json` pouze kontroluje existující export metadat, bez zápisu. Zkontroluje šest stran, metadata 0–15, barvy včetně Java ARGB a UV včetně zrcadlení. Vypíše SHA vstupů a názvy textur mimo registrovaný atlas; takové názvy mohou být dynamické varianty Chisel s vlastními UV, automaticky se nezahazují. Ověřeno na exportu UIE: 6300 bloků a 100800 variant. PNG, shoda atlasu s exportem, vytvoření katalogu a import nového modpacku zatím čekají. Tento příkaz není dokončený importér.
+
+
+### Vytvoření katalogu z existujícího exportu
+
+Tento krok je hotový a ověřený na podkladech UIE. Nevytahuje data ze samotných mod JARů; potřebuje již připravené `assets.json`, `atlas-layout.json`, `atlas.png`, `grass.png` a `foliage.png` v jedné složce. Minecraft klient se při importu nespouští.
+
+```sh
+python -B uiemap.py catalog --source /data/export --out /data/catalog-new
+python -B uiemap.py catalog --source /data/export --out /data/catalog-new --apply
+```
+
+První příkaz je pouze kontrola metadat. Druhý zkopíruje podklady do pracovní složky, ověří vazbu SHA a rozměrů atlasu na layout, CRC PNG, úplnost omezeného zlib streamu a filtry řádků. Podporuje 8bit RGB/RGBA/grey PNG bez prokládání; colormapy musí mít 256 × 256 pixelů. Vytvoří `catalog.json` a `package.json` s SHA všech vstupů a kompilovaného katalogu. Dokončený adresář zpřístupní přejmenováním na novou cílovou cestu. Rodič cíle musí existovat; existující katalog nepřepíše. Při běžné chybě vlastní pracovní adresář uklidí. Po tvrdém pádu může zůstat `.import-lock` a `.catalog-*`; před jejich ručním úklidem ověřte, že import neběží.
+
+V konfiguraci nastavte `catalog` na nový adresář a spusťte `doctor`. Import neprokazuje, že assets a atlas pocházejí ze stejného modpacku, ani správnost všech modelů. To stále vyžaduje odpovídající zdrojový export a render vzorku. Ověření UIE: kompilovaný katalog má přesně stejné bajty i identity jako původní; 6300 bloků, 26607 položek tabulky textur včetně dynamických UV.

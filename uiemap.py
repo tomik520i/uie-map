@@ -6,6 +6,7 @@ import uiemap_config
 import uiemap_render
 import uiemap_serve
 import uiemap_doctor
+import catalog_package
 
 
 def main(argv=None):
@@ -18,6 +19,9 @@ def main(argv=None):
     check.add_argument('config',type=Path)
     doctor=commands.add_parser('doctor',help='Report missing prerequisites without rendering or starting services')
     doctor.add_argument('config',type=Path)
+    catalog=commands.add_parser('catalog',help='Prepare a new catalog from an existing asset export')
+    catalog.add_argument('--source',required=True,type=Path);catalog.add_argument('--out',required=True,type=Path)
+    catalog.add_argument('--apply',action='store_true')
     render=commands.add_parser('render',help='Plan or run one configured surface dimension (Linux systemd)')
     render.add_argument('config',type=Path);render.add_argument('--dimension',required=True)
     render.add_argument('--apply',action='store_true',help='Actually run render and publication')
@@ -27,6 +31,7 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if args.command=='check':return uiemap_config.main([str(args.config)])
     if args.command=='doctor':return uiemap_doctor.main([str(args.config)])
+    if args.command=='catalog':return catalog_package.main(['--source',str(args.source),'--out',str(args.out)]+(['--apply'] if args.apply else []))
     if args.command=='render':
         return uiemap_render.main([str(args.config),'--dimension',args.dimension]+(['--apply'] if args.apply else []))
     return uiemap_serve.main([str(args.config),'--main-dimension',args.main_dimension]+(['--apply'] if args.apply else []))

@@ -105,3 +105,17 @@ python -B uiemap.py catalog --source /data/export --out /data/catalog-new --appl
 První příkaz je pouze kontrola metadat. Druhý zkopíruje podklady do pracovní složky, ověří vazbu SHA a rozměrů atlasu na layout, CRC PNG, úplnost omezeného zlib streamu a filtry řádků. Podporuje 8bit RGB/RGBA/grey PNG bez prokládání; colormapy musí mít 256 × 256 pixelů. Vytvoří `catalog.json` a `package.json` s SHA všech vstupů a kompilovaného katalogu. Dokončený adresář zpřístupní přejmenováním na novou cílovou cestu. Rodič cíle musí existovat; existující katalog nepřepíše. Při běžné chybě vlastní pracovní adresář uklidí. Po tvrdém pádu může zůstat `.import-lock` a `.catalog-*`; před jejich ručním úklidem ověřte, že import neběží.
 
 V konfiguraci nastavte `catalog` na nový adresář a spusťte `doctor`. Import neprokazuje, že assets a atlas pocházejí ze stejného modpacku, ani správnost všech modelů. To stále vyžaduje odpovídající zdrojový export a render vzorku. Ověření UIE: kompilovaný katalog má přesně stejné bajty i identity jako původní; 6300 bloků, 26607 položek tabulky textur včetně dynamických UV.
+
+
+## Stav všech vybraných dimenzí
+
+`python -B uiemap.py status /cesta/config.json` přečte stav bez renderování, zápisu nebo spouštění služeb. Každá dimenze má zvlášť `publication` a `render`: nově selhávající výpočet nesmaže informaci o posledním platném publikovaném indexu. Kontrolují se binding světa/dimenze, SHA indexu a formát odkazů na dlaždice; obsah všech dlaždic se znovu nečte (`payloadsVerified: false`).
+
+- `published`: existuje platný publikovaný index; není to potvrzení aktuálnosti vůči právě běžícímu světu.
+- `unpublished`: chybí publikovaný ukazatel. `not-started`: pro dimenzi ještě neexistuje výstupní adresář.
+- `running-reported`: soubor uvádí běh a heartbeat není starší než 120 sekund. Proces se tím nepotvrzuje (`processVerified: false`).
+- `stale-running-record`: údaj o běhu má chybějící, starý nebo budoucí heartbeat. Samotný příkaz proces nezabíjí ani nerestartuje.
+- `done` je zaznamenaný konec výpočtu. Sledujte také `planComplete` a `hasFailures`; dokončení procesu samo neznamená úspěšný celý svět.
+- `error`: metadata jsou nečitelná, poškozená nebo patří jinému světu/dimenzi. Ostatní dimenze se zobrazí dál. Návratový kód je 2 při chybě metadat, jinak 0; zaznamenané neúspěšné render úlohy jsou samostatně v `hasFailures`.
+
+`total` a `done` počítají úlohy daného běhu; `plannedJobs` všechny oblasti plánu a `skippedUnchanged` převzaté nezměněné oblasti. Stav je okamžitý pohled na metadata, nikoli atomický snímek všech běžících procesů.

@@ -8,7 +8,7 @@ UIE Map vytváří interaktivní webovou 3D mapu uloženého světa modovaného 
 
 Směřujeme k samostatnému programu s konfigurací světa, výběrem více dimenzí, automatickými aktualizacemi a úplným návodem. Volitelný Minecraft mod může později doplnit napojení na server. Tyto části ještě nejsou dokončené: [stav a plán vývoje](ROADMAP.md), [naměřené velikosti a orientační výpočty](KAPACITA.md).
 
-Jednotný příkaz `python uiemap.py` už nabízí kontrolu konfigurace, spuštění povrchového renderu a webu z hotových výstupů. Postup pro vlastní připravený katalog najdete v [KONFIGURACE.md](KONFIGURACE.md); stav jednotlivých dimenzí v [DIMENZE.md](DIMENZE.md). Import libovolného modpacku a úplná automatizace provozu stále čekají.
+Jednotný příkaz `python uiemap.py` už nabízí kontrolu konfigurace, import existujícího exportu do katalogu, render, stav, aktualizace, systemd timer a web. Začněte [instalačním postupem](INSTALACE.md) a [vzorem konfigurace](examples/config.json). Podrobnosti jsou v [KONFIGURACE.md](KONFIGURACE.md); stav jednotlivých dimenzí v [DIMENZE.md](DIMENZE.md). Import libovolného modpacku a úplná automatizace provozu stále čekají.
 
 ## Co už funguje
 

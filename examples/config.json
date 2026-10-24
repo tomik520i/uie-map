@@ -1,0 +1,11 @@
+{
+  "format": "UIEMAP_CONFIG1",
+  "world": {"id": "my-world", "path": "../world"},
+  "catalog": "../catalog",
+  "out": "../map-output",
+  "dimensions": [
+    {"key": "0", "title": "Hlavní svět", "mode": "surface"}
+  ],
+  "limits": {"workers": 1, "memoryMiB": 2048, "minFreeGiB": 24},
+  "web": {"host": "127.0.0.1", "port": 8211}
+}

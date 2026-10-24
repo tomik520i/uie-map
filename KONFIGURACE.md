@@ -119,3 +119,17 @@ V konfiguraci nastavte `catalog` na nový adresář a spusťte `doctor`. Import 
 - `error`: metadata jsou nečitelná, poškozená nebo patří jinému světu/dimenzi. Ostatní dimenze se zobrazí dál. Návratový kód je 2 při chybě metadat, jinak 0; zaznamenané neúspěšné render úlohy jsou samostatně v `hasFailures`.
 
 `total` a `done` počítají úlohy daného běhu; `plannedJobs` všechny oblasti plánu a `skippedUnchanged` převzaté nezměněné oblasti. Stav je okamžitý pohled na metadata, nikoli atomický snímek všech běžících procesů.
+
+
+## Jeden aktualizační průchod všech vybraných dimenzí
+
+```sh
+python -B uiemap.py update /cesta/config.json
+python -B uiemap.py update /cesta/config.json --apply
+```
+
+Bez `--apply` se pouze připraví plán. S `--apply` se dimenze z konfigurace aktualizují postupně, vždy přes existující Linux systemd renderer s jeho limity RAM, pracovníků a rezervy disku. Nezměněné oblasti umí renderer převzít. Všechny dimenze se předem zkontrolují; caves a Nether jsou zatím odmítnuté. Konfigurace je připnutá hashem a při změně se další práce zastaví.
+
+První selhání průchod zastaví; výsledný JSON obsahuje dokončené výsledky a dosud nezpracované dimenze. Nestačí návratový kód 0: vyžaduje se potvrzení publikace pro správný svět, dimenzi, adresář a hash indexu. Návratový kód příkazu je 2 při neúspěchu, 0 při úspěchu nebo platném náhledu. Souhrn se zobrazí až po skončení průchodu; během běhu lze v druhém terminálu použít `uiemap.py status CONFIG`.
+
+Příkaz neinstaluje timer, nespouští další dimenze souběžně a nemění konfiguraci webu. Publikuje ale do nakonfigurovaných výstupů, takže web již připojený k těmto store může nová data převzít. Pravidelné plánování a jednotná retence jsou další rozpracované části.

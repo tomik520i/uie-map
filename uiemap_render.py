@@ -121,10 +121,13 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('config',type=Path);parser.add_argument('--dimension',required=True)
     parser.add_argument('--apply',action='store_true')
+    parser.add_argument('--expected-config-sha',help=argparse.SUPPRESS)
     parser.add_argument('--worker-config-sha',help=argparse.SUPPRESS)
     args=parser.parse_args(argv)
     try:
         work=plan(args.config,args.dimension)
+        if args.expected_config_sha and args.expected_config_sha!=work['configSha256']:
+            raise ValueError('Configuration changed after update planning')
         if args.worker_config_sha:
             if args.apply or args.worker_config_sha!=work['configSha256']:raise ValueError('Configuration changed before execution')
             print(json.dumps(run_worker(work),ensure_ascii=False));return 0

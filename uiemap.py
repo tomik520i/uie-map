@@ -8,6 +8,7 @@ import uiemap_serve
 import uiemap_doctor
 import catalog_package
 import uiemap_status
+import uiemap_update
 
 
 def main(argv=None):
@@ -20,6 +21,8 @@ def main(argv=None):
     check.add_argument('config',type=Path)
     status=commands.add_parser('status',help='Show recorded progress and independently verified publication metadata')
     status.add_argument('config',type=Path)
+    update=commands.add_parser('update',help='Plan or run one sequential update pass of configured dimensions')
+    update.add_argument('config',type=Path);update.add_argument('--apply',action='store_true')
     doctor=commands.add_parser('doctor',help='Report missing prerequisites without rendering or starting services')
     doctor.add_argument('config',type=Path)
     catalog=commands.add_parser('catalog',help='Prepare a new catalog from an existing asset export')
@@ -34,6 +37,7 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if args.command=='check':return uiemap_config.main([str(args.config)])
     if args.command=='status':return uiemap_status.main([str(args.config)])
+    if args.command=='update':return uiemap_update.main([str(args.config)]+(['--apply'] if args.apply else []))
     if args.command=='doctor':return uiemap_doctor.main([str(args.config)])
     if args.command=='catalog':return catalog_package.main(['--source',str(args.source),'--out',str(args.out)]+(['--apply'] if args.apply else []))
     if args.command=='render':

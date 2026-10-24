@@ -43,8 +43,25 @@ class UpdateTests(unittest.TestCase):
         self.assertEqual(len(calls),1)
 
     def test_unsupported_dimension_rejected_before_execution(self):
+        self.work();(self.root/'world/DIM-1/region').mkdir(parents=True)
+        (self.root/'world/DIM-1/region/r.0.0.mca').write_bytes(b'\0'*8192)
+        self.doc['dimensions'][1]['key']='-1';self.file.write_text(json.dumps(self.doc))
+        with self.assertRaisesRegex(ValueError,'Nether'):update.plan(self.file)
+
+    def test_cave_gc_rejected_before_any_renderer(self):
         self.work();self.doc['dimensions'][1]['mode']='caves';self.file.write_text(json.dumps(self.doc))
-        with self.assertRaisesRegex(ValueError,'cave'):update.plan(self.file)
+        work=update.plan(self.file)
+        with patch.object(update.subprocess,'run') as run,self.assertRaisesRegex(ValueError,'surface'):
+            update.execute(work,cleanup=True)
+        run.assert_not_called()
+
+    def test_cave_update_refuses_geometry_only_receipt(self):
+        self.work();self.doc['dimensions']=[dict(key='42',title='Cave',mode='caves')]
+        self.file.write_text(json.dumps(self.doc));work=update.plan(self.file)
+        self.assertFalse(update.execute(work,lambda *a,**k:self.reply(work['jobs'][0]))['complete'])
+        reply=self.reply(work['jobs'][0]);doc=json.loads(reply.stdout)
+        doc.update(mode='caves',capIndexSha256='b'*64);reply.stdout=json.dumps(doc)
+        self.assertTrue(update.execute(work,lambda *a,**k:reply)['complete'])
 
     def test_child_refuses_changed_configuration_before_start(self):
         self.work()

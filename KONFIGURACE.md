@@ -56,7 +56,7 @@ Příkaz čeká na dokončení a vypíše jméno své jednotky `uiemap-render-�
 
 Změna konfiguračního souboru mezi plánem a startem pracovníka je odmítnuta. Publikování proběhne až po dokončeném plánu bez chyb; výsledný JSON musí obsahovat `published: true` a konkrétní `indexSha256`. Při chybě zůstávají rozpracovaná data pro opravu a další pokus. Web se automaticky nepřepíná ani nerestartuje; ruční připojení hotového výstupu popisuje [DIMENZE.md](DIMENZE.md).
 
-Tento příkaz zatím přijímá pouze `surface`, odmítá Nether `-1` kvůli nehotovému řešení stropu a nespouští další dimenze automaticky. Import katalogu z modpacku je samostatná nedokončená část. Na Windows je dostupný náhled, nikoli spuštění přes systemd.
+Tento příkaz přijímá `surface` i `caves`, odmítá Nether `-1` kvůli nehotovému řešení stropu a nespouští další dimenze automaticky. Import katalogu z modpacku je samostatná nedokončená část. Na Windows je dostupný náhled, nikoli spuštění přes systemd.
 
 Ověření19.10.: celý skutečný povrch DIM42 spuštěný přes `--apply`,161dlaždic a publikování za přibližně65s; všech161SHA ověřeno.28Linux testů PASS. Veřejná data ani služby tímto testem nebyly přepnuté.
 
@@ -78,7 +78,7 @@ python uiemap.py serve uie-map.json --main-dimension 0 --apply
 
 Pro více povrchových dimenzí nejprve dokončete `render --apply` pro každou dimenzi uvedenou v konfiguraci. `serve` vyžaduje publikované výstupy všech vybraných dimenzí; chybějící či neodpovídající data nezamění za hlavní svět. Výchozí dimenzi určuje `--main-dimension`, ostatní se objeví v přepínači. Katalog je ověřen podle trvalých vazeb a SHA indexů; web následně ověřuje vlastní přenosy. Výstupní cesty z konfigurace není nutné ručně kopírovat do proměnných prostředí.
 
-Tento postup byl19.10. skutečně ověřen na odděleném kompletním exportu DIM42: generovaný web se otevřel, zobrazil terén a umožnil létání; žádná data hlavní mapy nepřebíral. Není to ještě ověření čisté instalace na jiném modpacku. Automatické aktualizační služby, retence, kolize a caves musí zatím používat samostatné provozní nástroje.
+Tento postup byl19.10. skutečně ověřen na odděleném kompletním exportu DIM42: generovaný web se otevřel, zobrazil terén a umožnil létání; žádná data hlavní mapy nepřebíral. Není to ještě ověření čisté instalace na jiném modpacku. Aktuálně už CLI nabízí plánovač, povrchovou retenci a export caves; propojení konfigurovaných caves s webem a kolizní export ještě nejsou hotové.
 
 
 ## Kontrola před spuštěním
@@ -128,7 +128,7 @@ python -B uiemap.py update /cesta/config.json
 python -B uiemap.py update /cesta/config.json --apply
 ```
 
-Bez `--apply` se pouze připraví plán. S `--apply` se dimenze z konfigurace aktualizují postupně, vždy přes existující Linux systemd renderer s jeho limity RAM, pracovníků a rezervy disku. Nezměněné oblasti umí renderer převzít. Všechny dimenze se předem zkontrolují; caves a Nether jsou zatím odmítnuté. Konfigurace je připnutá hashem a při změně se další práce zastaví.
+Bez `--apply` se pouze připraví plán. S `--apply` se dimenze z konfigurace aktualizují postupně, vždy přes existující Linux systemd renderer s jeho limity RAM, pracovníků a rezervy disku. Nezměněné oblasti umí renderer převzít. Všechny dimenze se předem zkontrolují; Nether je zatím odmítnutý; caves se publikují spolu s daty řezu. Konfigurace je připnutá hashem a při změně se další práce zastaví.
 
 První selhání průchod zastaví; výsledný JSON obsahuje dokončené výsledky a dosud nezpracované dimenze. Nestačí návratový kód 0: vyžaduje se potvrzení publikace pro správný svět, dimenzi, adresář a hash indexu. Návratový kód příkazu je 2 při neúspěchu, 0 při úspěchu nebo platném náhledu. Souhrn se zobrazí až po skončení průchodu; během běhu lze v druhém terminálu použít `uiemap.py status CONFIG`.
 
@@ -181,3 +181,20 @@ python -B uiemap.py schedule /data/config.json --interval 900 --gc --apply
 Bez `--gc` automatická aktualizace nic neuklízí. S přepínačem proběhne jedna výchozí omezená dávka pro každou úspěšně publikovanou dimenzi. Při chybě publikace se úklid neprovede. Při chybě úklidu se průchod zastaví, ale výsledek ponechá potvrzení úspěšné publikace; ostatní dimenze jsou v `pending`. Obsazený renderer znamená odložený úklid, nikoli smazání dat za běhu. Změněná konfigurace proti plánu je odmítnutá.
 
 Ověřeno na soukromém store DIM42: skutečné odstranění jednoho nepoužívaného indexu, nezměněný current ukazatel a všech 163 ověřovaných souborů aktuální mapy. Ověřen také timer s aktualizací a následným GC. Konfigurovaný úklid kolizí a jeskyní není touto povrchovou funkcí dokončený.
+
+
+## Jeskynní export z konfigurace
+
+Pro vybranou dimenzi nastavte `"mode": "caves"`. Stejné příkazy `render` a `update` pak vytvoří geometrii i companion data pro uzavírání řezu v samostatném podadresáři `caves`; povrchový store se nepřepisuje. Používají se stejné limity RAM a volného disku. Nether `-1` zatím není podporovaný ani touto cestou.
+
+```sh
+python -B uiemap.py render /data/cave-config.json --dimension 42 --apply
+python -B uiemap.py update /data/cave-config.json --apply
+python -B uiemap.py status /data/cave-config.json
+```
+
+Úspěšný výsledek obsahuje `mode: caves`, `indexSha256` i `capIndexSha256`. Samotná publikace geometrie se za úspěšný jeskynní výsledek nepovažuje. Ve `status` znamená `awaiting-caps`, že companion index chybí nebo neodpovídá geometrii; opakovaný běh může dokončit přerušenou publikaci. Proces zatím nepřepíná žádný web.
+
+V jedné konfiguraci může být klíč dimenze uveden jen jednou. Chcete-li pro stejnou dimenzi povrch i caves, použijte dvě konfigurace se stejným world ID, cestami a rozdílným mode. Neplánujte je bez rozmyslu souběžně: každá služba má vlastní limit paměti. `update --gc` a `schedule --gc` odmítnou konfiguraci s caves před spuštěním, protože společný konfigurovaný úklid geometrie a cap dat ještě není připojený.
+
+Ověřeno 24.10. na celé soukromé DIM42: 10 oblastí, 161 dvojic, nulové chyby, přibližně 95 s prvního renderu. Všechny dvojice geometrie a rozbalených cap dat prošly nezávislou kontrolou hashů. Ověřen i navazující skutečný `update`. `serve` zatím přijímá povrchové konfigurace; nový konfigurovaný cave výstup ještě nemá připojený webový režim a není veřejně nasazený.

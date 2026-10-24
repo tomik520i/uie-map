@@ -33,7 +33,18 @@ def publication(store,world,dimension,mode):
     if not isinstance(tiles,dict) or not tiles:raise ValueError('Empty or invalid published tiles')
     for key,value in tiles.items():
         if not TILE.fullmatch(key) or not isinstance(value,str) or not HEX.fullmatch(value):raise ValueError('Invalid tile reference')
-    return dict(state='published',indexSha256=sha,tiles=len(tiles),payloadsVerified=False)
+    result=dict(state='published',indexSha256=sha,tiles=len(tiles),payloadsVerified=False)
+    if mode=='caves':
+        from cave_pair_publish import _published_document
+        caps=_published_document(store/'cave-data')
+        if caps is None:
+            return dict(result,state='awaiting-caps',reason='No companion cap index')
+        cap_sha,cap=caps
+        if (cap['geometryIndexSha256']!=sha or cap['rendererIdentity']!=doc.get('rendererIdentity')
+            or cap['atlasSha256']!=doc.get('atlasSha256') or set(cap['pairs'])!=set(tiles)):
+            return dict(result,state='awaiting-caps',reason='Companion cap index does not match geometry')
+        result.update(capIndexSha256=cap_sha,capPairs=len(cap['pairs']))
+    return result
 
 
 def progress(store,now):

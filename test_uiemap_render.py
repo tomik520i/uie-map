@@ -23,7 +23,19 @@ class RenderConfigTests(unittest.TestCase):
     def test_only_explicit_supported_dimensions(self):
         with self.assertRaises(ValueError):render.plan(self.file,'0')
         self.doc['dimensions'][0]['mode']='caves';self.save()
-        with self.assertRaisesRegex(ValueError,'cave'):render.plan(self.file,'42')
+        cave=render.plan(self.file,'42')
+        self.assertIn('--caves',cave['command']);self.assertIn('--cave-caps',cave['command'])
+        self.assertEqual(cave['binding']['mode'],'caves')
+        self.assertEqual(Path(cave['out']).name,'caves')
+
+    def test_cave_success_requires_both_publication_receipts(self):
+        self.doc['dimensions'][0]['mode']='caves';self.save();work=render.plan(self.file,'42')
+        result=dict(published=True,indexSha256='a'*64)
+        with self.assertRaisesRegex(ValueError,'caps'):render.publication_receipt(work,result)
+        result['capPublication']=dict(published=False,indexSha256='b'*64)
+        with self.assertRaises(ValueError):render.publication_receipt(work,result)
+        result['capPublication']['published']=True
+        self.assertEqual(render.publication_receipt(work,result)['capIndexSha256'],'b'*64)
     def test_custom_dimension_preserves_path(self):
         self.doc['dimensions']=[dict(key='x:tropics',path='TROPICS',title='Tropy',mode='surface')];self.save()
         p=render.plan(self.file,'x:tropics');self.assertEqual(p['binding']['regionPath'],str(self.root/'world/TROPICS/region'))

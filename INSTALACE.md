@@ -28,7 +28,7 @@ python3 -B uiemap.py catalog --source /data/export --out /data/catalog-new --app
 
 Vzor najdete v [examples/config.json](examples/config.json). Zkopírujte jej do vlastní konfigurace a upravte cesty. Relativní cesty se vyhodnocují vůči umístění konfigurace, nikoli aktuálnímu terminálu. Pole `world.id` je vaše stabilní označení světa; neměňte ho pro již používané výstupy.
 
-Dimenze se vybírají výslovně. Začněte jednou povrchovou dimenzí; `0` znamená hlavní svět. Další číselná dimenze například `42` standardně používá `DIM42`. Nether pod stropem a konfigurace cave/kolizního exportu tímto postupem zatím podporované nejsou. [Podrobná konfigurace](KONFIGURACE.md) popisuje vlastní cesty a omezení.
+Dimenze se vybírají výslovně. Začněte jednou povrchovou dimenzí; `0` znamená hlavní svět. Další číselná dimenze například `42` standardně používá `DIM42`. Nether pod stropem a konfigurovaný kolizní export zatím podporované nejsou. Samostatný cave export z konfigurace už funguje; jeho webové připojení ještě čeká, viz podrobná konfigurace. [Podrobná konfigurace](KONFIGURACE.md) popisuje vlastní cesty a omezení.
 
 ## 3. Kontrola a první render
 
@@ -62,7 +62,7 @@ Timer se vztahuje k dané konfiguraci; nepřidávejte další aktualizační slu
 ## Co ještě není instalačním postupem vyřešené
 
 - Získání plného katalogu pro libovolný nový modpack a ověření jeho modelů.
-- Jednotná retence všech dat a konfigurované exporty kolizí/jeskyní.
+- Jednotná retence všech dat, konfigurovaný export kolizí a webové připojení nového konfigurovaného cave exportu.
 - Automatická instalace webu jako služby, reverse proxy a TLS.
 - Ověření celého systému po skutečném restartu stroje.
 

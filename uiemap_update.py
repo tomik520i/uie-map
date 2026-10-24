@@ -1,4 +1,4 @@
-"""Plan or execute one sequential update pass for explicitly configured surface dimensions."""
+"""Plan or execute one sequential update pass for explicitly configured dimensions."""
 import argparse
 import hashlib
 import json
@@ -26,6 +26,8 @@ def plan(path):
 
 
 def execute(work,runner=None,*,cleanup=False):
+    if cleanup and any(job.get('mode','surface')!='surface' for job in work['jobs']):
+        raise ValueError('Automatic GC currently supports surface stores only; no update started')
     runner=subprocess.run if runner is None else runner
     completed=[]
     for index,job in enumerate(work['jobs']):
@@ -44,6 +46,9 @@ def execute(work,runner=None,*,cleanup=False):
                and receipt.get('world')==work['world'] and receipt.get('dimension')==job['dimension']
                and receipt.get('out')==job['out'] and isinstance(receipt.get('indexSha256'),str)
                and HEX.fullmatch(receipt['indexSha256']) is not None)
+        if valid and job.get('mode')=='caves':
+            valid=(receipt.get('mode')=='caves' and isinstance(receipt.get('capIndexSha256'),str)
+                   and HEX.fullmatch(receipt['capIndexSha256']) is not None)
         completed.append(dict(dimension=job['dimension'],published=valid,returncode=run.returncode,
                               receipt=receipt if valid else None))
         if not valid:

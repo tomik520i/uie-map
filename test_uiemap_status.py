@@ -1,4 +1,4 @@
-import json,subprocess,sys,unittest
+import json,subprocess,sys,unittest,hashlib
 from pathlib import Path
 import test_uiemap_serve as fixtures
 import uiemap_status as status
@@ -39,6 +39,25 @@ class StatusTests(unittest.TestCase):
         self.record(state='done',failedJobs=1,planComplete=False)
         row=status.inspect(self.file,now=1000)['dimensions'][0]
         self.assertTrue(row['render']['hasFailures']);self.assertEqual(row['publication']['state'],'published')
+
+    def test_cave_publication_requires_matching_caps(self):
+        store=self.stores['0']
+        doc=dict(context=dict(world='mine',dimension='0',caves=True),tiles={'0,0':'a'*64},
+                 rendererIdentity='b'*64,atlasSha256='c'*64)
+        raw=json.dumps(doc).encode();sha=hashlib.sha256(raw).hexdigest()
+        (store/'indexes'/(sha+'.json')).write_bytes(raw)
+        (store/'current.json').write_text(json.dumps(dict(indexSha256=sha)))
+        self.assertEqual(status.publication(store,'mine','0','caves')['state'],'awaiting-caps')
+        root=store/'cave-data';(root/'indexes').mkdir(parents=True)
+        cap=dict(format='UIE_CAVE_CAP_INDEX1',geometryIndexSha256=sha,rendererIdentity='b'*64,
+                 atlasSha256='c'*64,capIdentity='d'*64,pairs={'0,0':'e'*64})
+        def publish():
+            raw=json.dumps(cap,sort_keys=True,separators=(',',':')).encode();key=hashlib.sha256(raw).hexdigest()
+            (root/'indexes'/(key+'.json')).write_bytes(raw)
+            (root/'current.json').write_text(json.dumps(dict(format='UIE_CAVE_CAP_POINTER1',indexSha256=key),sort_keys=True,separators=(',',':')))
+        publish();self.assertEqual(status.publication(store,'mine','0','caves')['state'],'published')
+        cap['geometryIndexSha256']='f'*64;publish()
+        self.assertEqual(status.publication(store,'mine','0','caves')['state'],'awaiting-caps')
 
     def test_wrong_dimension_does_not_hide_other_dimension(self):
         self.index(self.stores['0'],'42')

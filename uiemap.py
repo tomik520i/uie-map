@@ -39,7 +39,7 @@ def main(argv=None):
     catalog=commands.add_parser('catalog',help='Prepare a new catalog from an existing asset export')
     catalog.add_argument('--source',required=True,type=Path);catalog.add_argument('--out',required=True,type=Path)
     catalog.add_argument('--apply',action='store_true')
-    render=commands.add_parser('render',help='Plan or run one configured surface dimension (Linux systemd)')
+    render=commands.add_parser('render',help='Plan or run one configured surface/cave dimension (Linux systemd)')
     render.add_argument('config',type=Path);render.add_argument('--dimension',required=True)
     render.add_argument('--apply',action='store_true',help='Actually run render and publication')
     serve=commands.add_parser('serve',help='Plan or start the web viewer for published surface stores')

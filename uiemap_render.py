@@ -1,4 +1,4 @@
-"""Run one configured surface dimension under a Linux user-systemd memory limit.
+"""Run one configured surface or paired cave dimension under a Linux user-systemd memory limit.
 
 Without --apply this only prints the selected command and resource limits.
 Publication is explicit in the result; this does not configure or restart a web server.
@@ -27,20 +27,20 @@ def plan(config_path, dimension):
     rows=[row for row in doc['dimensions'] if row['key']==dimension]
     if len(rows)!=1:raise ValueError('Select a dimension explicitly present in the configuration')
     row=rows[0]
-    if row['mode']!='surface':raise ValueError('Configured cave orchestration is not implemented')
-    if dimension=='-1':raise ValueError('Nether below-roof surface is not implemented')
+    if dimension=='-1':raise ValueError('Configured Nether rendering is not implemented')
     if row['regions']==0:raise ValueError('Selected dimension has no saved region files')
-    out=Path(row['outputs']['surface'])
+    mode=row['mode'];out=Path(row['outputs'][mode])
     if out.resolve()!=out:raise ValueError('Linked output ancestors are not allowed')
     expected=binding.make_binding(world=doc['world']['path'],world_id=doc['world']['id'],
-                                  dimension=dimension,dimension_path=row['path'],mode='surface')
+                                  dimension=dimension,dimension_path=row['path'],mode=mode)
     if out.exists():binding.ensure(out,expected)
     command=[sys.executable,'-B',str(Path(__file__).with_name('world_hires.py')),
         '--world',doc['world']['path'],'--catalog-dir',doc['catalog'],'--out',str(out),
         '--world-id',doc['world']['id'],'--dimension-key',dimension,'--dimension-path',row['path'],
         '--workers',str(doc['limits']['workers']),'--prepare-immutable']
+    if mode=='caves':command+=['--caves','--cave-caps']
     return dict(format='UIEMAP_RENDER_PLAN1',config=str(config_path),configSha256=hashlib.sha256(raw).hexdigest(),
-        world=doc['world']['id'],dimension=dimension,out=str(out),command=command,limits=doc['limits'],
+        world=doc['world']['id'],dimension=dimension,mode=mode,out=str(out),command=command,limits=doc['limits'],
         binding=expected,regions=row['regions'],readOnly=True,webChanged=False)
 
 
@@ -78,6 +78,21 @@ def service_command(plan, unit):
         '--worker-config-sha',plan['configSha256']]
 
 
+def publication_receipt(plan,result):
+    import re
+    valid=lambda value:isinstance(value,str) and re.fullmatch('[0-9a-f]{64}',value) is not None
+    if result.get('published') is not True or not valid(result.get('indexSha256')):
+        raise ValueError('Publisher did not confirm geometry publication')
+    receipt=dict(format='UIEMAP_RENDER_RESULT1',world=plan['world'],dimension=plan['dimension'],
+                 mode=plan.get('mode','surface'),out=plan['out'],published=True,indexSha256=result['indexSha256'],webChanged=False)
+    if plan.get('mode')=='caves':
+        cap=result.get('capPublication')
+        if not isinstance(cap,dict) or cap.get('published') is not True or not valid(cap.get('indexSha256')):
+            raise ValueError('Cave geometry published but companion caps are not confirmed; rerun to recover')
+        receipt['capIndexSha256']=cap['indexSha256']
+    return receipt
+
+
 def run_worker(plan):
     # The worker and every renderer child belong to the same systemd cgroup.
     # If the reserve is crossed, exiting the worker makes systemd stop its children.
@@ -107,10 +122,9 @@ def run_worker(plan):
         session=PublishSession()
         for _ in range(100000):
             free_space(plan)
-            result=publisher.run_once(out,session,world=plan['world'],dimension=plan['dimension'])
+            result=publisher.run_once(out,session,world=plan['world'],dimension=plan['dimension'],cave_pairs=plan.get('mode')=='caves')
             if result.get('published'):
-                return dict(format='UIEMAP_RENDER_RESULT1',world=plan['world'],dimension=plan['dimension'],
-                    out=str(out),published=True,indexSha256=result['indexSha256'],webChanged=False)
+                return publication_receipt(plan,result)
             if result.get('state')=='error':raise ValueError('Publisher rejected the output')
             time.sleep(.05)
         raise ValueError('Publisher tick limit reached; output retained for retry')

@@ -1,5 +1,6 @@
 import json,subprocess,unittest,sys
 from pathlib import Path
+from unittest.mock import patch
 import test_uiemap_serve as fixtures
 import uiemap_update as update
 
@@ -50,6 +51,27 @@ class UpdateTests(unittest.TestCase):
         run=subprocess.run([sys.executable,'-B',str(Path(update.__file__).with_name('uiemap_render.py')),
             str(self.file),'--dimension','0','--apply','--expected-config-sha','0'*64],capture_output=True,text=True)
         self.assertEqual(run.returncode,2);self.assertIn('changed after update planning',run.stderr)
+
+    def test_cleanup_is_opt_in_and_follows_successful_publication(self):
+        work=self.work()
+        def run(command,**kwargs):
+            key=command[command.index('--dimension')+1]
+            return self.reply(next(job for job in work['jobs'] if job['dimension']==key))
+        with patch.object(update.uiemap_gc,'collect',return_value={'collection':{'state':'executed','removed':0}}) as gc:
+            self.assertTrue(update.execute(work,run)['complete']);gc.assert_not_called()
+            self.assertTrue(update.execute(work,run,cleanup=True)['complete'])
+            self.assertEqual(gc.call_count,2)
+            self.assertEqual(gc.call_args.kwargs['expected_config_sha'],work['configSha256'])
+        with patch.object(update.uiemap_gc,'collect') as gc:
+            update.execute(work,lambda *a,**k:subprocess.CompletedProcess([],1,'','failure'),cleanup=True)
+            gc.assert_not_called()
+
+    def test_cleanup_failure_keeps_publication_receipt(self):
+        work=self.work()
+        with patch.object(update.uiemap_gc,'collect',side_effect=ValueError('bad store')):
+            result=update.execute(work,lambda *a,**k:self.reply(work['jobs'][0]),cleanup=True)
+        self.assertFalse(result['complete']);self.assertTrue(result['results'][0]['published'])
+        self.assertEqual(result['pending'],['42'])
 
 
 if __name__=='__main__':unittest.main()

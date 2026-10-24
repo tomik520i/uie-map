@@ -7,6 +7,7 @@ import subprocess
 import sys
 import uiemap_config
 import uiemap_render
+import uiemap_gc
 from uiemap_serve import HEX
 
 
@@ -24,7 +25,7 @@ def plan(path):
                 world=config['world']['id'],jobs=jobs,readOnly=True,concurrency=1,webChanged=False)
 
 
-def execute(work,runner=None):
+def execute(work,runner=None,*,cleanup=False):
     runner=subprocess.run if runner is None else runner
     completed=[]
     for index,job in enumerate(work['jobs']):
@@ -49,15 +50,26 @@ def execute(work,runner=None):
             return dict(format='UIEMAP_UPDATE_RESULT1',complete=False,results=completed,
                         pending=[j['dimension'] for j in work['jobs'][index+1:]],
                         error=run.stderr[-2000:] or 'Renderer did not confirm publication',webChanged=False)
+        if cleanup:
+            try:
+                completed[-1]['collection']=uiemap_gc.collect(work['config'],job['dimension'],apply=True,
+                    expected_config_sha=work['configSha256'])['collection']
+            except (OSError,ValueError,RuntimeError) as error:
+                return dict(format='UIEMAP_UPDATE_RESULT1',complete=False,results=completed,
+                            pending=[j['dimension'] for j in work['jobs'][index+1:]],
+                            error='Publication succeeded but collection failed: '+str(error),webChanged=False)
     return dict(format='UIEMAP_UPDATE_RESULT1',complete=True,results=completed,pending=[],webChanged=False)
 
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('config',type=Path)
-    parser.add_argument('--apply',action='store_true');args=parser.parse_args(argv)
+    parser.add_argument('--apply',action='store_true')
+    parser.add_argument('--gc',action='store_true',help='After publication collect one bounded batch per dimension')
+    args=parser.parse_args(argv)
     try:
         work=plan(args.config)
-        result=execute(work) if args.apply else work
+        work['collectAfterPublication']=args.gc
+        result=execute(work,cleanup=args.gc) if args.apply else work
     except (OSError,ValueError) as error:parser.exit(2,str(error)+'\n')
     print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0 if result.get('readOnly') or result.get('complete') else 2

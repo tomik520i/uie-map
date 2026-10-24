@@ -14,12 +14,12 @@ def quote(value):
     return '"'+value.replace('\\','\\\\').replace('"','\\"').replace('%','%%').replace('$','$$')+'"'
 
 
-def plan(config,interval=900):
+def plan(config,interval=900,*,cleanup=False):
     if type(interval) is not int or not 60<=interval<=86400:raise ValueError('Interval must be 60..86400 seconds')
     update=uiemap_update.plan(config)
     name='uiemap-update-'+hashlib.sha256(update['config'].encode()).hexdigest()[:20]
-    command=' '.join(quote(value) for value in [sys.executable,'-B',str(Path(__file__).with_name('uiemap.py').resolve()),
-                                                'update',update['config'],'--apply'])
+    command=' '.join(quote(value) for value in ([sys.executable,'-B',str(Path(__file__).with_name('uiemap.py').resolve()),
+                                                'update',update['config'],'--apply']+(['--gc'] if cleanup else [])))
     service='\n'.join(['[Unit]','Description=UIE Map configured surface update','', '[Service]',
         'Type=oneshot','ExecStart='+command,'KillMode=control-group','KillSignal=SIGINT',
         'TimeoutStartSec=infinity','TimeoutStopSec=90','CPUWeight=10','IOWeight=10','Nice=15',''])
@@ -27,7 +27,7 @@ def plan(config,interval=900):
         'OnActiveSec=30','OnUnitInactiveSec='+str(interval),'AccuracySec=1','Unit='+name+'.service',
         '', '[Install]','WantedBy=timers.target',''])
     return dict(format='UIEMAP_SCHEDULE_PLAN1',name=name,config=update['config'],intervalSeconds=interval,
-                files={name+'.service':service,name+'.timer':timer},readOnly=True,
+                files={name+'.service':service,name+'.timer':timer},readOnly=True,collectAfterPublication=cleanup,
                 notes=['First update starts after 30 seconds; interval is measured from completion.',
                        'One systemd service cannot overlap itself. Manual updates are separate.',
                        'Stopping only the timer prevents future starts; stop the service to interrupt the active pass.',
@@ -59,9 +59,10 @@ def install_files(work,directory):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('config',type=Path)
     parser.add_argument('--interval',type=int,default=900);parser.add_argument('--apply',action='store_true')
+    parser.add_argument('--gc',action='store_true',help='Enable bounded collection after each published dimension')
     args=parser.parse_args(argv)
     try:
-        work=plan(args.config,args.interval)
+        work=plan(args.config,args.interval,cleanup=args.gc)
         if args.apply:
             if sys.platform!='linux':raise ValueError('Schedule installation requires Linux user systemd')
             subprocess.run(['systemctl','--user','show','--property=Version','--value'],check=True,capture_output=True,timeout=10)

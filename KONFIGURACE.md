@@ -158,3 +158,26 @@ Vypnutí timeru brání dalším spuštěním; samostatné zastavení služby p�
 Konfigurace a zdrojový adresář programu musí zůstat na stejných cestách. Existující jednotky s odlišným obsahem se nepřepisují; při změně intervalu nejprve vypněte timer, zastavte službu a odstraňte pouze tuto dvojici jednotek. Potom lze instalaci opakovat. Pokud aktivace selže, mohou zůstat již zapsané jednotky; výsledek se nehlásí jako úspěch.
 
 Příkaz nezapíná uživatelské lingering oprávnění a nepotvrzuje běh po rebootu nebo odhlášení. To závisí na nastavení uživatelského systemd na konkrétním serveru. Ověřen byl skutečný timer, jeden celý aktualizační průchod a vypnutí/úklid soukromé testovací služby; restart serveru se kvůli hře neprováděl.
+
+
+## Omezený úklid nepoužívaných povrchových dat
+
+```sh
+python -B uiemap.py gc /data/config.json --dimension 0
+python -B uiemap.py gc /data/config.json --dimension 0 --max-files 32 --max-bytes 16777216 --apply
+```
+
+Výchozí režim nic nemaže, ale může vytvořit soubor zámku rendereru. Vybere se právě jedna dimenze uvedená v konfiguraci a ověří se její binding. Příkaz používá existující retenční plán pod exkluzivním zámkem: chrání publikované indexy, jejich odkazy, chráněnou historii a rozpracovanou přípravu. Při obsazeném rendereru vrátí `producer-busy` bez úklidu.
+
+Jeden průchod odstraní nejvýše 128 souborů / 64 MiB logických velikostí; menší limity lze nastavit. Logické bajty nejsou zárukou stejného uvolnění disku kvůli hardlinkům. Mažou se pouze nepoužívané obsahově adresované soubory v adresářích immutable store. Svět, zdrojový katalog, staré klientské artefakty a legacy mutable tiles se tím neuklízejí. Chyba po části mazání může zanechat částečně dokončenou dávku; další pokus vždy vytváří nový plán.
+
+Úklid po úspěšné publikaci lze výslovně zapnout:
+
+```sh
+python -B uiemap.py update /data/config.json --gc --apply
+python -B uiemap.py schedule /data/config.json --interval 900 --gc --apply
+```
+
+Bez `--gc` automatická aktualizace nic neuklízí. S přepínačem proběhne jedna výchozí omezená dávka pro každou úspěšně publikovanou dimenzi. Při chybě publikace se úklid neprovede. Při chybě úklidu se průchod zastaví, ale výsledek ponechá potvrzení úspěšné publikace; ostatní dimenze jsou v `pending`. Obsazený renderer znamená odložený úklid, nikoli smazání dat za běhu. Změněná konfigurace proti plánu je odmítnutá.
+
+Ověřeno na soukromém store DIM42: skutečné odstranění jednoho nepoužívaného indexu, nezměněný current ukazatel a všech 163 ověřovaných souborů aktuální mapy. Ověřen také timer s aktualizací a následným GC. Konfigurovaný úklid kolizí a jeskyní není touto povrchovou funkcí dokončený.

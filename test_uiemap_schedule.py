@@ -31,6 +31,11 @@ class ScheduleTests(unittest.TestCase):
         for value in (True,0,59,86401):
             with self.assertRaises(ValueError):schedule.plan(self.file,value)
 
+    def test_collection_only_in_opted_in_service(self):
+        plain=schedule.plan(self.file);cleanup=schedule.plan(self.file,cleanup=True)
+        self.assertNotIn('--gc',plain['files'][plain['name']+'.service'])
+        self.assertIn('"--gc"',cleanup['files'][cleanup['name']+'.service'])
+
     @unittest.skipUnless(os.name=='posix','Linux render service')
     def test_render_interrupt_stops_its_owned_service(self):
         with patch.object(render.shutil,'which',return_value='/bin/systemd-run'),\

@@ -1,0 +1,45 @@
+import tempfile,unittest,os
+from pathlib import Path
+from unittest.mock import patch
+import test_uiemap_render as fixtures
+import uiemap_schedule as schedule
+import uiemap_render as render
+
+
+class ScheduleTests(unittest.TestCase):
+    setUp=fixtures.RenderConfigTests.setUp
+    save=fixtures.RenderConfigTests.save
+
+    def test_plan_is_readonly_and_waits_after_completion(self):
+        before=set(self.root.rglob('*'));work=schedule.plan(self.file,600)
+        self.assertEqual(before,set(self.root.rglob('*')))
+        timer=work['files'][work['name']+'.timer'];service=work['files'][work['name']+'.service']
+        self.assertIn('OnUnitInactiveSec=600',timer);self.assertNotIn('OnUnitActiveSec=',timer)
+        self.assertIn('KillSignal=SIGINT',service);self.assertIn('Type=oneshot',service)
+        self.assertEqual(work['name'],schedule.plan(self.file,900)['name'])
+
+    def test_exact_repeat_allowed_but_changed_units_not_overwritten(self):
+        work=schedule.plan(self.file);directory=self.root/'units'
+        schedule.install_files(work,directory);before={p.name:p.read_bytes() for p in directory.iterdir()}
+        schedule.install_files(work,directory)
+        with self.assertRaisesRegex(ValueError,'differs'):schedule.install_files(schedule.plan(self.file,600),directory)
+        self.assertEqual(before,{p.name:p.read_bytes() for p in directory.iterdir()})
+
+    def test_paths_escaped_and_invalid_interval_refused(self):
+        self.assertEqual(schedule.quote('/tmp/a %n $VAR "q"'),'"/tmp/a %%n $$VAR \\"q\\""')
+        with self.assertRaises(ValueError):schedule.quote('a\nb')
+        for value in (True,0,59,86401):
+            with self.assertRaises(ValueError):schedule.plan(self.file,value)
+
+    @unittest.skipUnless(os.name=='posix','Linux render service')
+    def test_render_interrupt_stops_its_owned_service(self):
+        with patch.object(render.shutil,'which',return_value='/bin/systemd-run'),\
+             patch.object(render,'free_space',return_value=100*1024**3),\
+             patch.object(render.subprocess,'run',side_effect=[KeyboardInterrupt(),None]) as run:
+            with self.assertRaises(KeyboardInterrupt):render.main([str(self.file),'--dimension','42','--apply'])
+            stop=run.call_args_list[-1].args[0]
+            self.assertEqual(stop[:3],['systemctl','--user','stop'])
+            self.assertTrue(stop[3].startswith('uiemap-render-'))
+
+
+if __name__=='__main__':unittest.main()

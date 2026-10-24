@@ -133,3 +133,28 @@ Bez `--apply` se pouze připraví plán. S `--apply` se dimenze z konfigurace ak
 První selhání průchod zastaví; výsledný JSON obsahuje dokončené výsledky a dosud nezpracované dimenze. Nestačí návratový kód 0: vyžaduje se potvrzení publikace pro správný svět, dimenzi, adresář a hash indexu. Návratový kód příkazu je 2 při neúspěchu, 0 při úspěchu nebo platném náhledu. Souhrn se zobrazí až po skončení průchodu; během běhu lze v druhém terminálu použít `uiemap.py status CONFIG`.
 
 Příkaz neinstaluje timer, nespouští další dimenze souběžně a nemění konfiguraci webu. Publikuje ale do nakonfigurovaných výstupů, takže web již připojený k těmto store může nová data převzít. Pravidelné plánování a jednotná retence jsou další rozpracované části.
+
+
+## Pravidelné aktualizace přes uživatelský systemd
+
+```sh
+python -B uiemap.py schedule /cesta/config.json --interval 900
+python -B uiemap.py schedule /cesta/config.json --interval 900 --apply
+```
+
+Bez `--apply` získáte pouze obsah jednotek a jejich název. S `--apply` se na Linuxu zapíší do `~/.config/systemd/user` a aktivuje se timer. První průchod začne za 30 sekund; další za uvedený interval od dokončení předchozího průchodu, nikoli od jeho začátku. Interval je 60–86400 sekund. Stejná systemd služba neběží dvakrát souběžně; ručně spuštěné aktualizace jsou samostatné procesy a používají existující zámky rendereru.
+
+Jméno `uiemap-update-<hash>` je součástí výsledného JSON. Dosadíte ho do následujících příkazů:
+
+```sh
+systemctl --user status uiemap-update-<hash>.timer
+journalctl --user -u uiemap-update-<hash>.service
+systemctl --user disable --now uiemap-update-<hash>.timer
+systemctl --user stop uiemap-update-<hash>.service
+```
+
+Vypnutí timeru brání dalším spuštěním; samostatné zastavení služby přeruší aktivní průchod. Služba posílá SIGINT procesům průchodu, aby renderer mohl ukončit vlastní omezenou systemd úlohu. Přehled renderu zůstává v `uiemap.py status CONFIG`; souhrn průchodu a chyby jsou v journalu.
+
+Konfigurace a zdrojový adresář programu musí zůstat na stejných cestách. Existující jednotky s odlišným obsahem se nepřepisují; při změně intervalu nejprve vypněte timer, zastavte službu a odstraňte pouze tuto dvojici jednotek. Potom lze instalaci opakovat. Pokud aktivace selže, mohou zůstat již zapsané jednotky; výsledek se nehlásí jako úspěch.
+
+Příkaz nezapíná uživatelské lingering oprávnění a nepotvrzuje běh po rebootu nebo odhlášení. To závisí na nastavení uživatelského systemd na konkrétním serveru. Ověřen byl skutečný timer, jeden celý aktualizační průchod a vypnutí/úklid soukromé testovací služby; restart serveru se kvůli hře neprováděl.

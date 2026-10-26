@@ -37,7 +37,7 @@ jobs:
       - name: Nezávislé ověření kompletní jeskynní generace
         run: python -m unittest test_cave_release_verify test_cave_pair test_cave_pair_index
       - name: Rozpoznání dimenzí bez zápisu do světa
-        run: python -m unittest test_world_layout test_uiemap_config test_uiemap_render test_uiemap_update test_uiemap_schedule test_uiemap_gc test_uiemap_serve test_uiemap_cli test_uiemap_status test_uiemap_doctor test_catalog_import_plan test_catalog_package test_atlas_identity test_hires_gc test_hires_retention
+        run: python -m unittest test_world_layout test_uiemap_config test_uiemap_render test_uiemap_update test_uiemap_schedule test_uiemap_services test_uiemap_gc test_uiemap_serve test_uiemap_cli test_uiemap_status test_uiemap_doctor test_catalog_import_plan test_catalog_package test_atlas_identity test_hires_gc test_hires_retention
       - name: Oddělení dimenzí a ochrana publikace
         run: python -m unittest test_dimension_binding test_dimension_renderer test_hires_lock_wait test_hires_publish_tick test_hires_bundle
       - name: Retence a bezpečné publikování

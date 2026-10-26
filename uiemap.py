@@ -11,6 +11,7 @@ import uiemap_status
 import uiemap_update
 import uiemap_schedule
 import uiemap_gc
+import uiemap_services
 
 
 def main(argv=None):
@@ -23,6 +24,8 @@ def main(argv=None):
     check.add_argument('config',type=Path)
     status=commands.add_parser('status',help='Show recorded progress and independently verified publication metadata')
     status.add_argument('config',type=Path)
+    services=commands.add_parser('services',help='Read actual systemd timer/service state for a configuration path')
+    services.add_argument('config',type=Path)
     update=commands.add_parser('update',help='Plan or run one sequential update pass of configured dimensions')
     update.add_argument('config',type=Path);update.add_argument('--apply',action='store_true')
     update.add_argument('--gc',action='store_true')
@@ -48,6 +51,7 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if args.command=='check':return uiemap_config.main([str(args.config)])
     if args.command=='status':return uiemap_status.main([str(args.config)])
+    if args.command=='services':return uiemap_services.main([str(args.config)])
     if args.command=='gc':return uiemap_gc.main([str(args.config),'--dimension',args.dimension,
         '--max-files',str(args.max_files),'--max-bytes',str(args.max_bytes)]+(['--apply'] if args.apply else []))
     if args.command=='update':return uiemap_update.main([str(args.config)]+(['--apply'] if args.apply else [])+(['--gc'] if args.gc else []))

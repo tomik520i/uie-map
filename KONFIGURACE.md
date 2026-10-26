@@ -198,3 +198,10 @@ python -B uiemap.py status /data/cave-config.json
 V jedné konfiguraci může být klíč dimenze uveden jen jednou. Chcete-li pro stejnou dimenzi povrch i caves, použijte dvě konfigurace se stejným world ID, cestami a rozdílným mode. Neplánujte je bez rozmyslu souběžně: každá služba má vlastní limit paměti. `update --gc` a `schedule --gc` odmítnou konfiguraci s caves před spuštěním, protože společný konfigurovaný úklid geometrie a cap dat ještě není připojený.
 
 Ověřeno 24.10. na celé soukromé DIM42: 10 oblastí, 161 dvojic, nulové chyby, přibližně 95 s prvního renderu. Všechny dvojice geometrie a rozbalených cap dat prošly nezávislou kontrolou hashů. Ověřen i navazující skutečný `update`. `serve` zatím přijímá povrchové konfigurace; nový konfigurovaný cave výstup ještě nemá připojený webový režim a není veřejně nasazený.
+
+
+## Kontrola služby po restartu
+
+`python -B uiemap.py services /data/config.json` přečte skutečný stav uživatelského systemd timeru a služby vytvořených příkazem `schedule` pro tuto cestu konfigurace. Načtení konfigurace ani existence světa nejsou potřebné: službu lze dohledat i při poškozeném vstupu. Příkaz nic nespouští, nezastavuje a nepřepisuje.
+
+Výstup rozlišuje `not-installed`, skutečný `active`/`inactive`/`failed` stav a `error` při nedostupném systemd nebo timeoutu. Neaktivní oneshot služba je mezi běhy normální; sledujte také timer a `Result`/`ExecMainStatus`. Návratový kód 2 znamená chybu čtení, nepodporovanou platformu nebo stav `failed`. Chybějící jednotky nejsou vydávány za běžící službu. Příkaz pokrývá pouze jednotky dané konfigurace, nikoli starší ručně instalované produkční služby nebo Minecraft server. Stav renderovaných souborů poskytuje samostatný příkaz `status`.

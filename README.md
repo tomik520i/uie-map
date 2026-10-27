@@ -30,7 +30,7 @@ Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. T
 - Podpora modovaných bloků je neúplná. Některé mají zjednodušený tvar či metadata; chybějící model může být fialový zástupný blok.
 - Bloková data kolizí celé hlavní dimenze jsou nasazená. Tvary některých modovaných bloků zůstávají přibližné; mimo dostupná nebo odpovídající data může chůze používat přibližný terén.
 - Celosvětové exporty jsou dlouhé dávkové úlohy. První úplné průchody povrchu, jeskyní a kolizí jsou dokončené. Regiony pocházejí z různých okamžiků uložení hry. Aktualizace kolizí zatím prochází celý svět; není to okamžitá fronta změn.
-- Veřejná ukázka nabízí hlavní dimenzi, DIM42 a DIM82 včetně povrchu, blokových kolizí a jeskyní. DIM42 a DIM82 mají 30min automatické aktualizace a omezený úklid. DIM80,81,83,84,85 se připravují; DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
+- Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. K veřejnému připojení zbývá: DIM84, DIM85. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Nová generace obsahuje opravy barev modovaných biomů a registru bloků. Experimentální části zdrojového kódu nemusí odpovídat nasazenému provozu.
 - Opravena byla chyba náhradních názvů chybějících ID: souřadnice ve zprávě o chybě mohly přepsat jiný, známý blok v registru. Přepočítaný povrch, jeskyně i odpovídající kolize jsou již nasazené.

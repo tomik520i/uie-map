@@ -86,3 +86,20 @@ U maličké dimenze převládá pevná režie, zejména kopie atlasů. Násoben�
 | DIM80 | 138 | 16 673 642 B | 33 560 071 B | 2,01× |
 
 DIM80 dokončila všech 15 regionů za přibližně 416 sekund při jednom pracovníku. Bylo nezávisle ověřeno všech 138 souborů geometrie a soukromý webový náhled. Kolize a jeskyně v okamžiku tohoto měření ještě běžely/čekaly; čas neoznačuje dokončení všech vrstev. Rozdíl hustoty dokládá, proč ani dvojnásobný scénář není horní mez. Pro další plánování používejte pokud možno vzorek stejné dimenze, ne jen hlavního světa.
+
+
+<!-- MEASURED EXPANSION START -->
+## Nejnovější měření dokončených dimenzí (27. 10.)
+
+| Dimenze | Dlaždice | Povrchová geometrie | Jeskynní geometrie | Celé výstupy na disku | První průchod všech tří vrstev |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 80 | 138 | 32.01 MiB | 41.10 MiB | 143.94 MiB | 25.33 min |
+| 81 | 48 | 7.13 MiB | 13.85 MiB | 81.07 MiB | 7.43 min |
+| 82 | 1 | 0.03 MiB | 0.03 MiB | 53.63 MiB | 0.12 min |
+| 83 | 161 | 7.05 MiB | 7.05 MiB | 71.95 MiB | 6.62 min |
+
+Společné obsazení uvedených výstupů při tomto měření: **350.59 MiB**. Každý inode je v tomto součtu započten pouze jednou i napříč vrstvami a dimenzemi. Celé výstupy zahrnují přítomné atlasy, metadata, kolize, uzávěry, historii a pracovní soubory; nezahrnují adresářová metadata, zdrojový svět, externí katalog, zálohy a budoucí rezervu. Měření živého provozu není atomický snímek. Geometrické sloupce měří pouze odkazované publikované soubory.
+
+Čas je součet skutečných prvních běhů povrch→kolize→jeskyně při jednom pracovníku, včetně spuštění a publikování. Nezahrnuje následnou ruční kontrolu a nasazení a není předpovědí jiného světa.
+
+<!-- MEASURED EXPANSION END -->

@@ -1,6 +1,6 @@
 # Dimenze — rozpoznání, render a webový přepínač
 
-**HOTOVO:** rozpoznání adresářů, oddělený render přes CLI a samostatný webový pohled. Ve veřejné ukázce je přepínač hlavního světa, DIM42 a DIM82. DIM42 jeskyně jsou veřejně dostupné od27.10. včetně30min aktualizací. Jednotná konfigurace podporuje povrch, jeskyně a jednorázový export kolizí. **ROZDĚLANÉ:** render DIM80,81,83,84,85; úplná provozní automatizace. Následující příkaz pro rozpoznání nic nerenderuje ani nezapisuje.
+**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. K veřejnému připojení zbývá: DIM84, DIM85. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 
 ```sh
 python world_layout.py /cesta/k/vlastnimu/svetu
@@ -41,7 +41,7 @@ Ověřeno413regresními testy na Ubuntu a skutečným renderem/publikováním um
 
 Renderer zpracoval všech10uložených oblastí `DIM42`,767chunků a161dlaždic bez chyb. Render a následné soukromé publikování trvaly dohromady přibližně62s při jednom pracovníku. Všech161geometrických souborů bylo zkontrolováno podle SHA-256; index má vlastní identitu dimenze42 a pokus o publikování poddimenzí0 byl odmítnut. Geometrická data mají přibližně1,72MB; tento malý svět není podklad pro odhad libovolné dimenze.
 
-**HOTOVO / NASAZENO 19.10.:** kompletní povrch DIM42, samostatné zobrazení a přepínač na webu. Skutečný prohlížeč ověřil terén, létání, přepnutí hlavní svět → DIM42 → hlavní svět a odmítnutí chybné identity. **HOTOVO / NASAZENO27.10.:** jeskynní režim DIM42,161párů a30min aktualizace. **HOTOVO / NASAZENO27.10.:**161párů blokových kolizí a30min obnova povrchu→kolizí. Chůze načítá bloková data; modované tvary mohou být přibližné. **ČEKÁ:** ostatní dimenze. Nejde o potvrzení věrných modelů všech modovaných bloků ani o podporu Netheru. Minecraft klient nebyl spuštěný.
+**HOTOVO / NASAZENO 19.10.:** kompletní povrch DIM42, samostatné zobrazení a přepínač na webu. Skutečný prohlížeč ověřil terén, létání, přepnutí hlavní svět → DIM42 → hlavní svět a odmítnutí chybné identity. **HOTOVO / NASAZENO27.10.:** jeskynní režim DIM42,161párů a30min aktualizace. **HOTOVO / NASAZENO27.10.:**161párů blokových kolizí a30min obnova povrchu→kolizí. Chůze načítá bloková data; modované tvary mohou být přibližné. **Zbývající dimenze:** viz aktuální přehled níže. Nejde o potvrzení věrných modelů všech modovaných bloků ani o podporu Netheru. Minecraft klient nebyl spuštěný.
 
 ## Nastavení samostatného webu a přepínače
 
@@ -79,11 +79,22 @@ Katalog se načítá při startu webového serveru. Hlavní nastavení zůstáv�
 Vstupem serveru zůstává `node server.mjs`; tento soubor je kompatibilní i s importem z PM2 wrapperu. `map-handler.mjs` je interní factory bez spouštění portu při importu.
 
 
-## Další dimenze — stav 27. 10.
 
-- **HOTOVO / NASAZENO: DIM82.** Jeden uložený chunk, jedna dlaždice povrchu, odpovídající kolizní data a jeskynní řez. Payloady nezávisle ověřeny; veřejný prohlížeč prošel přepnutím z hlavního světa, řezem a návratem. Dva 30min časovače obnovují povrch→kolize a jeskyně, včetně omezeného úklidu historie. První skutečné běhy dokončeny bez chyb. Jeden sloupec terénu odpovídá uloženému rozsahu, nejde o nedokončený render větší dimenze.
-- **BEZ TERÉNU: DIM−112.** Hlavičky obsahují 695 uložených chunků, ale úplné čtení jejich NBT potvrdilo nulový počet blokových sekcí. Prázdnou mapu nepublikujeme. Renderer po chybě přípravy nyní skončí s důvodem a nečeká zbytečně na publikaci.
-- **ROZDĚLANÉ: DIM80,81,83,84,85.** Skutečně spuštěná sekvenční fronta povrch→kolize→jeskyně. Veřejné připojení následuje po kontrole konkrétní dimenze.
-- **ČEKÁ: Nether.** Současný konfigurovaný renderer jej odmítá; potřebuje řešení viditelnosti pod stropem. Odstranění kontroly ID samo o sobě podporu nepřidá.
 
-Číselná ID jsou identitou konkrétního světa. Neodvozujeme z nich název planety či modu bez ověření konfigurace. Počty uložených chunků a odhad geometrie umí nový příkaz `uiemap capacity`; podrobnosti v [KAPACITA.md](KAPACITA.md).
+
+<!-- CURRENT EXPANSION START -->
+## Aktuální nasazení dalších dimenzí (27. 10.)
+
+Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. K veřejnému připojení zbývá: DIM84, DIM85. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
+
+| Dimenze | Veřejných dlaždic | Povrch / kolize / jeskyně |
+| --- | ---: | --- |
+| 42 | 161 | **HOTOVO / NASAZENO** |
+| 80 | 138 | **HOTOVO / NASAZENO** |
+| 81 | 48 | **HOTOVO / NASAZENO** |
+| 82 | 1 | **HOTOVO / NASAZENO** |
+| 83 | 161 | **HOTOVO / NASAZENO** |
+
+Před zveřejněním proběhlo nezávislé ověření geometrie, kolizních dat a jeskynních párů. Prohlížeč ověřil přepnutí, úplné načtení potřebných řezů a návrat na hlavní mapu. Skupinové aktualizace zpracovávají dimenze postupně, takže počet nových dimenzí nezvyšuje počet současně spuštěných rendererů v každé frontě. Povrchová a jeskynní fronta ale mohou běžet souběžně; nejde o globální limit všech služeb na serveru. Staré samostatné časovače DIM80/82 byly vypnuté.
+
+<!-- CURRENT EXPANSION END -->

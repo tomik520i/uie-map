@@ -8,6 +8,7 @@ import sys
 import uiemap_config
 import uiemap_render
 import uiemap_gc
+import uiemap_cave_gc
 from uiemap_serve import HEX
 
 
@@ -25,7 +26,9 @@ def plan(path):
                 world=config['world']['id'],jobs=jobs,readOnly=True,concurrency=1,webChanged=False)
 
 
-def execute(work,runner=None,*,cleanup=False,collisions=False,collision_gc=False):
+def execute(work,runner=None,*,cleanup=False,collisions=False,collision_gc=False,cave_cleanup=False):
+    if cave_cleanup and any(job.get('mode')!='caves' for job in work['jobs']):
+        raise ValueError('Cave cleanup requires cave stores only; no update started')
     if collision_gc and not collisions:raise ValueError('Collision GC requires collision updates')
     if collisions and any(job.get('mode','surface')!='surface' for job in work['jobs']):
         raise ValueError('Collision updates require surface stores only; no update started')
@@ -88,6 +91,18 @@ def execute(work,runner=None,*,cleanup=False,collisions=False,collision_gc=False
                 return dict(format='UIEMAP_UPDATE_RESULT1',complete=False,results=completed,
                     pending=[j['dimension'] for j in work['jobs'][index+1:]],
                     error='Surface published but collision export failed: '+(collision.stderr[-2000:] or 'Missing valid receipt'),webChanged=False)
+        if cave_cleanup:
+            completed[-1]['caveCollection']=[]
+            try:
+                for geometry in (False,True):
+                    if digest(work['config'])!=work['configSha256']:raise ValueError('Configuration changed before cave collection')
+                    result=uiemap_cave_gc.collect(work['config'],job['dimension'],apply=True,geometry=geometry)
+                    completed[-1]['caveCollection'].append(result)
+                    if result['collection']['state']!='executed':raise ValueError('Cave collector did not execute')
+            except (OSError,ValueError,RuntimeError) as error:
+                return dict(format='UIEMAP_UPDATE_RESULT1',complete=False,results=completed,
+                    pending=[j['dimension'] for j in work['jobs'][index+1:]],
+                    error='Publication succeeded but cave collection failed: '+str(error),webChanged=False)
         if cleanup:
             try:
                 completed[-1]['collection']=uiemap_gc.collect(work['config'],job['dimension'],apply=True,
@@ -105,16 +120,19 @@ def main(argv=None):
     parser.add_argument('--gc',action='store_true',help='After publication collect one bounded batch per dimension')
     parser.add_argument('--collisions',action='store_true',help='Export matching block data after each surface publication')
     parser.add_argument('--collision-gc',action='store_true',help='Enable bounded protected collision maintenance')
+    parser.add_argument('--cave-gc',action='store_true',help='Collect cave companions then root geometry after publication')
     args=parser.parse_args(argv)
     try:
         work=plan(args.config)
+        if args.cave_gc and any(job.get('mode')!='caves' for job in work['jobs']):raise ValueError('Cave cleanup requires cave stores only')
         if args.collision_gc and not args.collisions:raise ValueError('Collision GC requires --collisions')
         work['collectAfterPublication']=args.gc
         if args.collisions and any(job.get('mode','surface')!='surface' for job in work['jobs']):
             raise ValueError('Collision updates require surface stores only')
         work['collisionsAfterPublication']=args.collisions
         work['collisionMaintenance']=args.collision_gc
-        result=execute(work,cleanup=args.gc,collisions=args.collisions,collision_gc=args.collision_gc) if args.apply else work
+        work['caveMaintenance']=args.cave_gc
+        result=execute(work,cleanup=args.gc,collisions=args.collisions,collision_gc=args.collision_gc,cave_cleanup=args.cave_gc) if args.apply else work
     except (OSError,ValueError) as error:parser.exit(2,str(error)+'\n')
     print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0 if result.get('readOnly') or result.get('complete') else 2

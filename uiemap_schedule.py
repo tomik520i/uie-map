@@ -18,17 +18,18 @@ def unit_name(config):
     return 'uiemap-update-'+hashlib.sha256(str(Path(config).resolve()).encode()).hexdigest()[:20]
 
 
-def plan(config,interval=900,*,cleanup=False,collisions=False,collision_gc=False):
+def plan(config,interval=900,*,cleanup=False,collisions=False,collision_gc=False,cave_cleanup=False):
     if collision_gc and not collisions:raise ValueError('Collision GC requires collision updates')
     if type(interval) is not int or not 60<=interval<=86400:raise ValueError('Interval must be 60..86400 seconds')
     update=uiemap_update.plan(config)
+    if cave_cleanup and any(job.get('mode')!='caves' for job in update['jobs']):raise ValueError('Cave cleanup requires cave stores only')
     if collisions and any(job.get('mode','surface')!='surface' for job in update['jobs']):
         raise ValueError('Scheduled collisions require surface stores only')
     if cleanup and any(job.get('mode','surface')!='surface' for job in update['jobs']):
         raise ValueError('Scheduled GC currently supports surface stores only')
     name=unit_name(update['config'])
     command=' '.join(quote(value) for value in ([sys.executable,'-B',str(Path(__file__).with_name('uiemap.py').resolve()),
-                                                'update',update['config'],'--apply']+(['--gc'] if cleanup else [])+(['--collisions'] if collisions else [])+(['--collision-gc'] if collision_gc else [])))
+                                                'update',update['config'],'--apply']+(['--gc'] if cleanup else [])+(['--collisions'] if collisions else [])+(['--collision-gc'] if collision_gc else [])+(['--cave-gc'] if cave_cleanup else [])))
     service='\n'.join(['[Unit]','Description=UIE Map configured surface update','', '[Service]',
         'Type=oneshot','ExecStart='+command,'KillMode=control-group','KillSignal=SIGINT',
         'TimeoutStartSec=infinity','TimeoutStopSec=90','CPUWeight=10','IOWeight=10','Nice=15',''])
@@ -39,6 +40,7 @@ def plan(config,interval=900,*,cleanup=False,collisions=False,collision_gc=False
                 files={name+'.service':service,name+'.timer':timer},readOnly=True,collectAfterPublication=cleanup,
                 collisionsAfterPublication=collisions,
                 collisionMaintenance=collision_gc,
+                caveMaintenance=cave_cleanup,
                 notes=['First update starts after 30 seconds; interval is measured from completion.',
                        'One systemd service cannot overlap itself. Manual updates are separate.',
                        'Stopping only the timer prevents future starts; stop the service to interrupt the active pass.',
@@ -73,9 +75,10 @@ def main(argv=None):
     parser.add_argument('--gc',action='store_true',help='Enable bounded collection after each published dimension')
     parser.add_argument('--collisions',action='store_true',help='Refresh collisions after each surface publication')
     parser.add_argument('--collision-gc',action='store_true',help='Enable bounded protected collision maintenance')
+    parser.add_argument('--cave-gc',action='store_true',help='Collect cave companions then root geometry')
     args=parser.parse_args(argv)
     try:
-        work=plan(args.config,args.interval,cleanup=args.gc,collisions=args.collisions,collision_gc=args.collision_gc)
+        work=plan(args.config,args.interval,cleanup=args.gc,collisions=args.collisions,collision_gc=args.collision_gc,cave_cleanup=args.cave_gc)
         if args.apply:
             if sys.platform!='linux':raise ValueError('Schedule installation requires Linux user systemd')
             subprocess.run(['systemctl','--user','show','--property=Version','--value'],check=True,capture_output=True,timeout=10)

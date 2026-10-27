@@ -268,8 +268,16 @@ def plan_retention(out, *, now=None):
     roots.update(sha for sha, stamp in journal['lastPublished'].items() if stamp >= cutoff)
     roots.update(sha for sha, info in entries['indexes'].items()
                  if max(info.st_mtime, info.st_ctime) >= cutoff)
+    companion=None
+    if os.path.lexists(out/'cave-data'):
+        from cave_geometry_retention import references
+        companion=references(out,now=now)
+        roots.update(companion['indexes'])
     protected = {kind: set() for kind in _KINDS}
     protected['indexes'] = roots
+    if companion:
+        protected['objects'].update(companion['objects'])
+        protected['atlases'].update(companion['atlases'])
     for sha in roots:
         doc, context = _index(out, sha, charge)
         protected['objects'].update(doc['tiles'].values())
@@ -302,7 +310,7 @@ def plan_retention(out, *, now=None):
     candidate_totals = {kind: 0 for kind in _KINDS}
     for kind, (suffix, _) in _KINDS.items():
         for sha, info in entries[kind].items():
-            if sha in protected[kind] or max(info.st_mtime, info.st_ctime) >= cutoff:
+            if (companion and companion['suppress']) or sha in protected[kind] or max(info.st_mtime, info.st_ctime) >= cutoff:
                 continue
             candidate_totals[kind] += 1
             if len(candidates) < MAX_CANDIDATES:
@@ -319,6 +327,9 @@ def plan_retention(out, *, now=None):
             'preparationProgressPresent': preparation,
             'preparationProgressValid': progress_doc is not None, 'scanned': scanned,
             'metadataBytes': metadata, 'unknown': unknown,
+            'caveProtection':None if companion is None else dict(indexes=len(companion['indexes']),
+                objects=len(companion['objects']),suppressed=companion['suppress'],
+                metadataBytes=companion['metadataBytes'],scanned=companion['scanned']),
             'candidateTotals': candidate_totals,
             'candidateCount': sum(candidate_totals.values()),
             'candidatesOmitted': sum(candidate_totals.values()) - len(candidates),

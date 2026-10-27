@@ -63,6 +63,17 @@ class UpdateTests(unittest.TestCase):
         doc.update(mode='caves',capIndexSha256='b'*64);reply.stdout=json.dumps(doc)
         self.assertTrue(update.execute(work,lambda *a,**k:reply)['complete'])
 
+    def test_cave_cleanup_order_and_failure_keep_root_untouched(self):
+        self.work();self.doc['dimensions']=[dict(key='42',title='Cave',mode='caves')]
+        self.file.write_text(json.dumps(self.doc));work=update.plan(self.file)
+        reply=self.reply(work['jobs'][0]);doc=json.loads(reply.stdout);doc.update(mode='caves',capIndexSha256='b'*64);reply.stdout=json.dumps(doc)
+        with patch.object(update.uiemap_cave_gc,'collect',return_value={'collection':{'state':'executed'}}) as gc:
+            self.assertTrue(update.execute(work,lambda *a,**k:reply,cave_cleanup=True)['complete'])
+            self.assertEqual([c.kwargs['geometry'] for c in gc.call_args_list],[False,True])
+        with patch.object(update.uiemap_cave_gc,'collect',side_effect=ValueError('bad companion')) as gc:
+            result=update.execute(work,lambda *a,**k:reply,cave_cleanup=True)
+            self.assertEqual(gc.call_count,1);self.assertFalse(result['complete']);self.assertTrue(result['results'][0]['published'])
+
     def test_child_refuses_changed_configuration_before_start(self):
         self.work()
         run=subprocess.run([sys.executable,'-B',str(Path(update.__file__).with_name('uiemap_render.py')),

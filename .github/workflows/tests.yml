@@ -35,7 +35,7 @@ jobs:
       - name: Jeskynní limity a obnova publikace
         run: python -m unittest test_cave_full_limits test_cave_full_render test_cave_full_integration test_cave_batch_integration
       - name: Nezávislé ověření kompletní jeskynní generace
-        run: python -m unittest test_cave_release_verify test_cave_pair test_cave_pair_index
+        run: python -m unittest test_cave_release_verify test_cave_pair test_cave_pair_index test_cave_geometry_retention
       - name: Rozpoznání dimenzí bez zápisu do světa
         run: python -m unittest test_world_layout test_uiemap_config test_uiemap_render test_uiemap_update test_uiemap_schedule test_uiemap_services test_uiemap_gc test_uiemap_cave_gc test_uiemap_collisions test_uiemap_collision_gc test_uiemap_collision_web test_uiemap_serve test_uiemap_cli test_uiemap_status test_uiemap_doctor test_catalog_import_plan test_catalog_package test_atlas_identity test_hires_gc test_hires_retention
       - name: Oddělení dimenzí a ochrana publikace

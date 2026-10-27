@@ -269,3 +269,17 @@ Po úspěšném exportu se ověří vlastnictví výstupu, inicializuje evidence
 Po zapnutí profilu pokračujte s tímto přepínačem: starý exporter bez podpory údržby takové uložiště úmyslně odmítá. Existující odlišnou systemd jednotku příkaz nepřepisuje. Povrchové `--gc` je samostatná funkce. Tento režim nemaže svět, katalog ani klientské prostředky.
 
 Na DIM42 ověřena inicializace, opakovaný export s aktivním profilem i produkční společný běh. První průchod nesmazal žádné soubory, protože nebyly způsobilé; všech161publikovaných párů následně nezávisle prošlo kontrolou. Automatická retence DIM42 je nasazená, nikoli tím automaticky retence všech ostatních dimenzí.
+
+
+### Úklid jeskynní geometrie
+
+```sh
+python uiemap.py cave-gc caves.json --dimension 42 --geometry
+python uiemap.py cave-gc caves.json --dimension 42 --geometry --apply
+python uiemap.py update caves.json --cave-gc --apply
+python uiemap.py schedule caves.json --cave-gc --interval 1800 --apply
+```
+
+Bez `--geometry` zůstává `cave-gc` úklidem doprovodných dat. S touto volbou spravuje root geometrii,indexy,atlasy a rozložení; všechny stále existující jeskynní indexy a páry chrání své odkazy. Poškozená metadata zastaví plán. Automatické `--cave-gc` po publikaci nejprve uklízí doprovodná data, potom znovu vyhodnotí ochranu a uklízí geometrii. Každá fáze má limit64souborů/16MiB; jde o logické velikosti, hardlinky mohou znamenat menší skutečnou úsporu. Svět,katalog a klientské prostředky se nemažou.
+
+Ověřeno na oddělené DIM42 a nasazeno pro hlavní veřejný svět i DIM42. První dva hlavní průchody každý odstranily tři staré jeskynní indexy a tři odpovídající geometrické indexy, aktuální publikace zůstaly stejné. Provoz hlavního úklidu dosáhl přibližně384MiB paměti. Existující odlišnou systemd jednotku generátor nepřepisuje.

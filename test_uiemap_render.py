@@ -56,6 +56,17 @@ class RenderConfigTests(unittest.TestCase):
     def test_worker_requires_resource_service(self):
         with patch.dict(os.environ,{},clear=True):
             with self.assertRaisesRegex(ValueError,'systemd'):render.run_worker(render.plan(self.file,'42'))
+    @unittest.skipUnless(os.name=='posix','Linux worker')
+    def test_failed_preparation_does_not_spin_publisher_or_change_pointer(self):
+        import subprocess,hires_publisher
+        work=render.plan(self.file,'42');out=render.prepare_output(work)
+        pointer=out/'current.json';pointer.write_bytes(b'previous publication')
+        for kind in ['error','skipped']:
+            state=dict(planComplete=True,failedJobs=0,failedTiles=0,immutablePreparation=dict(state=kind,message='empty geometry',reason='reserve'))
+            with patch.dict(os.environ,{'INVOCATION_ID':'test'}),patch.object(render,'free_space'),patch.object(render,'prepare_output',return_value=out),patch.object(render.subprocess,'run',return_value=subprocess.CompletedProcess([],0,json.dumps(state),'')),patch.object(hires_publisher,'run_once') as publish:
+                with self.assertRaisesRegex(ValueError,'Geometry preparation failed'):render.run_worker(work)
+                publish.assert_not_called()
+            self.assertEqual(pointer.read_bytes(),b'previous publication')
     @unittest.skipUnless(os.name=='posix','POSIX binding locks')
     def test_owned_output_and_repeat_binding(self):
         p=render.plan(self.file,'42');out=render.prepare_output(p)

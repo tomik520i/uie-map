@@ -118,6 +118,9 @@ def run_worker(plan):
         state=json.loads(completed.stdout)
         if not state.get('planComplete') or state.get('failedJobs') or state.get('failedTiles'):
             raise ValueError('Renderer did not complete the selected dimension; nothing published')
+        preparation=state.get('immutablePreparation',{})
+        if preparation.get('state') in ('error','skipped'):
+            raise ValueError('Geometry preparation failed; nothing published: '+str(preparation.get('message',preparation.get('reason','unknown reason')))[:500])
         binding.ensure(out,plan['binding'])
         session=PublishSession()
         for _ in range(100000):

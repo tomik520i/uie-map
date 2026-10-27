@@ -1,8 +1,6 @@
-> Aktualizace 27.10.2026: DIM42 povrch **NASAZEN**, jeskyně **NASAZENÉ** včetně 30min aktualizací. Konfigurovaný export kolizí a web **OVĚŘENÉ SOUKROMĚ**; veřejné kolize DIM42 a pravidelná obnova jejího povrchu **ČEKÁ**. Konfigurovaný omezený cave companion GC je **OVĚŘENÝ SOUKROMĚ**. Tento stav nahrazuje starší poznámky níže o čekajících jeskyních.
-
 # Dimenze — rozpoznání, render a webový přepínač
 
-**HOTOVO:** rozpoznání adresářů, oddělený render přes CLI a samostatný webový pohled. Ve veřejné ukázce je přepínač hlavního světa a skutečné DIM42. **ČEKÁ:** další dimenze, jejich blokové kolize a jeskyně, propojení s jednotnou konfigurací. Následující příkaz pro rozpoznání nic nerenderuje ani nezapisuje.
+**HOTOVO:** rozpoznání adresářů, oddělený render přes CLI a samostatný webový pohled. Ve veřejné ukázce je přepínač hlavního světa a skutečné DIM42. DIM42 jeskyně jsou veřejně dostupné od27.10. včetně30min aktualizací. Jednotná konfigurace podporuje povrch, jeskyně a jednorázový export kolizí. **ČEKÁ:** veřejné blokové kolize DIM42, automatická obnova jejího povrchu, další dimenze a úplná provozní automatizace. Následující příkaz pro rozpoznání nic nerenderuje ani nezapisuje.
 
 ```sh
 python world_layout.py /cesta/k/vlastnimu/svetu
@@ -36,14 +34,14 @@ python world_hires.py --world /data/world --catalog-dir /data/catalog \
 
 Příklad zpracuje nejvýše jednu oblast; není to spuštění automatického renderu celé dimenze. Publikování čeká na dokončení celého plánu dimenze. Pro dokončení všech jejích oblastí vynechte `--max-jobs 1`; rozpočet a prostředky ověřte předem. Publikování musí použít stejné ID světa, dimenzi a režim. Úložiště si při prvním běhu uloží trvalou vazbu na vstupní cesty; pozdější záměnu zdroje nebo publikování pod jinou identitou odmítne. Starý neprázdný výstup nelze tímto způsobem automaticky převzít. Přesun vstupů zatím vyžaduje samostatný migrační postup, který není implementovaný.
 
-Ověřeno413regresními testy na Ubuntu a skutečným renderem/publikováním umělého světa: hlavní dimenze zachovala totožné bajty geometrie oproti původní cestě, jiná dimenze na stejných souřadnicích vytvořila odlišná data a chybná identita publisheru byla odmítnuta. Zdrojový svět zůstal nezměněný. To **nepotvrzuje** správný vzhled skutečného Netheru nebo modovaných dimenzí. Cave dávkování a kolizní export dalších dimenzí stále zbývají. Webový výběr popisuje další část tohoto dokumentu.
+Ověřeno413regresními testy na Ubuntu a skutečným renderem/publikováním umělého světa: hlavní dimenze zachovala totožné bajty geometrie oproti původní cestě, jiná dimenze na stejných souřadnicích vytvořila odlišná data a chybná identita publisheru byla odmítnuta. Zdrojový svět zůstal nezměněný. To **nepotvrzuje** správný vzhled skutečného Netheru nebo modovaných dimenzí. Cave dávkování a kolizní export byly následně ověřeny na DIM42; nejde o ověření všech dimenzí. Webový výběr popisuje další část tohoto dokumentu.
 
 
 ## Skutečná dimenze UIE: soukromé ověření19.10.
 
 Renderer zpracoval všech10uložených oblastí `DIM42`,767chunků a161dlaždic bez chyb. Render a následné soukromé publikování trvaly dohromady přibližně62s při jednom pracovníku. Všech161geometrických souborů bylo zkontrolováno podle SHA-256; index má vlastní identitu dimenze42 a pokus o publikování poddimenzí0 byl odmítnut. Geometrická data mají přibližně1,72MB; tento malý svět není podklad pro odhad libovolné dimenze.
 
-**HOTOVO / NASAZENO 19.10.:** kompletní povrch DIM42, samostatné zobrazení a přepínač na webu. Skutečný prohlížeč ověřil terén, létání, přepnutí hlavní svět → DIM42 → hlavní svět a odmítnutí chybné identity. **ČEKÁ:** blokové kolize a jeskynní režim dalších dimenzí. Chůze v DIM42 zatím používá přibližnou geometrii. Nejde o potvrzení věrných modelů všech modovaných bloků ani o podporu Netheru. Minecraft klient nebyl spuštěný.
+**HOTOVO / NASAZENO 19.10.:** kompletní povrch DIM42, samostatné zobrazení a přepínač na webu. Skutečný prohlížeč ověřil terén, létání, přepnutí hlavní svět → DIM42 → hlavní svět a odmítnutí chybné identity. **HOTOVO / NASAZENO27.10.:** jeskynní režim DIM42,161párů a30min aktualizace. **OVĚŘENO SOUKROMĚ:**161párů blokových kolizí a web. **ČEKÁ:** jejich veřejné připojení a ostatní dimenze. Chůze v DIM42 zatím používá přibližnou geometrii. Nejde o potvrzení věrných modelů všech modovaných bloků ani o podporu Netheru. Minecraft klient nebyl spuštěný.
 
 ## Nastavení samostatného webu a přepínače
 

@@ -46,9 +46,12 @@ Pro volný disk plánujte `nová data + dočasné soubory + ponechané staré ge
 ```sh
 python uiemap.py capacity mapa.json
 python uiemap.py capacity mapa.json --sample-store /cesta/k/publikovanemu/povrchu --generations 2
+python uiemap.py capacity mapa.json --measure-output
 ```
 
 Příkaz čte pouze hlavičky regionů vybraných dimenzí, spočítá uložené chunky a obsazené dlaždice 64×64 bloků. Nezapisuje do světa, nespouští renderer a nerezervuje disk. Kontroluje rozsahy sektorů, jejich překryvy a změnu souboru během čtení. Hlavička ale nepotvrzuje správnost NBT a jednotlivá čtení nejsou atomický snímek celého živého světa.
+
+Volitelný `--measure-output` navíc změří existující výstupy povrchu, kolizí a jeskyní vybraných dimenzí. Uvede logické bajty souborů a přidělené diskové bloky; hardlinky počítá pouze jednou i napříč vrstvami. Součet jednotlivých řádků může sdílené soubory započítat vícekrát, proto používejte `combinedUniqueFileBytes` a `combinedAllocatedFileBytes`. Na platformě bez údaje o přidělených blocích vrací druhá hodnota `null`. Měření zahrnuje přítomnou historii a pracovní soubory uvnitř výstupů, ale ne adresářová metadata, zdrojový svět, externí katalog, zálohy ani budoucí rezervu. Odmítne odkazy a nečitelné položky místo tichého podhodnocení. Scan má limit 500 000 položek a není atomickým snímkem živých dat.
 
 Bez `--sample-store` nevymýšlí sazbu. S publikovaným vzorkem stejného režimu načte ověřený index a změří velikosti odkazované geometrie. Neprovádí úplné hashování payloadů (`payloadHashesVerified: false`). Výsledný JSON uvádí scénář jedné generace, zvoleného počtu generací bez sdílení a dvojnásobné hustoty. **Dvojnásobek není garantovaná horní mez.** Pro jeskyně použijte konfiguraci v režimu `caves` a jeskynní vzorek; povrchový vzorek je odmítnut.
 

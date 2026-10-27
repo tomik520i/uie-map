@@ -1,4 +1,4 @@
-import hashlib,json,tempfile,unittest
+import hashlib,json,tempfile,unittest,os
 from pathlib import Path
 import uiemap_capacity as capacity
 import hires_bundle as hb
@@ -38,5 +38,20 @@ class CapacityTests(unittest.TestCase):
     def test_empty_world_without_sample_has_no_invented_estimate(self):
         report=capacity.estimate(self.config);self.assertEqual(report['dimensions'][0]['renderSupport'],'empty')
         self.assertNotIn('geometryScenario',report['dimensions'][0])
+    def test_output_usage_counts_shared_inode_once_across_layers(self):
+        config=capacity.uiemap_config.load(self.config);outputs=config['dimensions'][0]['outputs']
+        surface=Path(outputs['surface']);caves=Path(outputs['caves']);surface.mkdir(parents=True);caves.mkdir()
+        (surface/'one').write_bytes(b'x'*100);os.link(surface/'one',caves/'shared');(caves/'two').write_bytes(b'y'*30)
+        report=capacity.estimate(self.config,measure_output=True)['outputUsage']
+        self.assertEqual(report['combinedUniqueFileBytes'],130)
+        measured=[row for row in report['outputs'] if row['state']=='measured']
+        self.assertEqual(sum(row['uniqueFileBytes'] for row in measured),230)
+        self.assertEqual(len([row for row in report['outputs'] if row['state']=='not-created']),1)
+        with self.assertRaisesRegex(ValueError,'budget'):capacity.output_usage(config,max_entries=1)
+    @unittest.skipUnless(os.name=='posix','POSIX symlinks')
+    def test_output_symlink_is_not_followed(self):
+        config=capacity.uiemap_config.load(self.config);surface=Path(config['dimensions'][0]['outputs']['surface']);surface.mkdir(parents=True)
+        (surface/'linked').symlink_to(self.root/'world',target_is_directory=True)
+        with self.assertRaisesRegex(ValueError,'Linked'):capacity.output_usage(config)
 
 if __name__=='__main__':unittest.main()

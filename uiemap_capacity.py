@@ -69,7 +69,47 @@ def sample(store):
         geometryBytes=sum(sizes.values()),bytesPerTile=total/len(doc['tiles']),payloadHashesVerified=False)
 
 
-def estimate(config_path,*,sample_store=None,generations=2):
+def output_usage(config,*,max_entries=500000):
+    """Measure existing configured outputs once per inode, without following links."""
+    seen=set();logical=allocated=entries=0;allocation_available=True;rows=[]
+    for dimension in config['dimensions']:
+        for mode in ('surface','collisions','caves'):
+            root=Path(dimension['outputs'][mode])
+            if not root.exists():
+                if root.is_symlink():raise ValueError('Linked output directory')
+                rows.append(dict(dimension=dimension['key'],mode=mode,state='not-created'));continue
+            if root.resolve()!=root:raise ValueError('Linked output directory')
+            layout.plain_directory(root)
+            local=set();local_logical=local_allocated=files=0;local_allocation=True
+            def scan_error(error):raise error
+            for base,dirs,names in os.walk(root,followlinks=False,onerror=scan_error):
+                entries+=len(dirs)+len(names)
+                if entries>max_entries:raise ValueError('Output inventory entry budget exceeded')
+                for name in dirs:
+                    if not stat.S_ISDIR((Path(base)/name).lstat().st_mode):raise ValueError('Linked output directory')
+                for name in names:
+                    info=(Path(base)/name).lstat()
+                    if not stat.S_ISREG(info.st_mode):raise ValueError('Nonregular file in output inventory')
+                    if not info.st_ino:raise ValueError('Filesystem does not expose stable file identity')
+                    identity=(info.st_dev,info.st_ino);blocks=getattr(info,'st_blocks',None);files+=1
+                    if identity not in local:
+                        local.add(identity);local_logical+=info.st_size
+                        if blocks is None:local_allocation=False
+                        else:local_allocated+=blocks*512
+                    if identity not in seen:
+                        seen.add(identity);logical+=info.st_size
+                        if blocks is None:allocation_available=False
+                        else:allocated+=blocks*512
+            rows.append(dict(dimension=dimension['key'],mode=mode,state='measured',files=files,
+                uniqueFileBytes=local_logical,allocatedFileBytes=local_allocated if local_allocation else None))
+    return dict(outputs=rows,combinedUniqueFileBytes=logical,combinedAllocatedFileBytes=allocated if allocation_available else None,
+        notes=['Live scan, not an atomic snapshot; includes all files currently in configured outputs, including history and scratch.',
+               'Each inode counted once across outputs. Individual row totals may share files; use the combined total.',
+               'Excludes directory metadata, input world, external catalog, backups and future workspace/reserve.',
+               'Allocated bytes are filesystem-reported; null when the platform does not expose allocation.'])
+
+
+def estimate(config_path,*,sample_store=None,generations=2,measure_output=False):
     if type(generations)is not int or not 1<=generations<=100:raise ValueError('Generations must be 1..100')
     config=uiemap_config.load(config_path);measured=sample(sample_store) if sample_store else None
     rows=[]
@@ -83,18 +123,22 @@ def estimate(config_path,*,sample_store=None,generations=2):
                 retainedGenerations=generations,retainedBytes=projected*generations,
                 twiceSampleDensityBytes=projected*generations*2)
         rows.append(row)
-    return dict(format='UIEMAP_CAPACITY1',readOnly=True,world=config['world']['id'],sample=measured,dimensions=rows,
+    result=dict(format='UIEMAP_CAPACITY1',readOnly=True,world=config['world']['id'],sample=measured,dimensions=rows,
         limitations=['Region headers only; chunk NBT and block registry are not validated.',
           'Occupied tiles may render empty; mod geometry density can differ greatly from the sample.',
           'Scenarios cover geometry only: exclude atlases, metadata, collisions, caps, scratch, backups and free-space reserve.',
           'Retained generations assume no sharing; hardlinks and deduplication can reduce physical disk use.',
           'Twice sample density is a scenario, not a guaranteed upper bound. No time or RAM estimate is inferred.'])
+    if measure_output:result['outputUsage']=output_usage(config)
+    return result
 
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('config',type=Path)
-    p.add_argument('--sample-store',type=Path);p.add_argument('--generations',type=int,default=2);a=p.parse_args(argv)
-    try:result=estimate(a.config,sample_store=a.sample_store,generations=a.generations)
+    p.add_argument('--sample-store',type=Path);p.add_argument('--generations',type=int,default=2)
+    p.add_argument('--measure-output',action='store_true',help='Also stat existing configured output files, including history and scratch')
+    a=p.parse_args(argv)
+    try:result=estimate(a.config,sample_store=a.sample_store,generations=a.generations,measure_output=a.measure_output)
     except (OSError,ValueError) as error:p.exit(2,str(error)+'\n')
     print(json.dumps(result,ensure_ascii=False,indent=2));return 0
 

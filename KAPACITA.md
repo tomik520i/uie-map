@@ -77,3 +77,12 @@ Celkem 748 obsazených dlaždic. Změřená aktuální hlavní dimenze má přib
 Po prvním automatickém updatu má jediná dlaždice DIM82 29 269 B povrchové a 29 442 B jeskynní geometrie. Celé tři výstupní adresáře ale společně zabírají **56 209 408 B ≈ 53,6 MiB přidělených souborových bloků**. Toto měření započítalo každý inode jen jednou i napříč vrstvami; adresářová metadata, společný vstupní katalog a zálohy nezahrnuje. Obsahuje přítomné indexy, atlasy, pracovní data a historii. Jde o živé, neatomické měření po dokončeném updatu.
 
 U maličké dimenze převládá pevná režie, zejména kopie atlasů. Násobení 53,6 MiB počtem dlaždic by bylo stejně chybné jako prohlášení, že celá dimenze potřebuje jen 59 kB. Pro kapacitní plán je nutné oddělit pevnou režii každé dimenze/vrstvy, proměnlivou geometrii a provozní rezervu. DIM−112 navíc prokazatelně neobsahuje žádné bloky, přesto má obsazené záznamy chunků; odhad z pouhých hlaviček ji proto nadhodnocuje.
+
+### Porovnání odhadu se skutečným dalším renderem
+
+| Povrch | Dlaždice | Odhad z hustoty hlavního světa | Změřená publikovaná geometrie | Skutečnost / odhad |
+| --- | ---: | ---: | ---: | ---: |
+| DIM82 | 1 | 120 824 B | 29 269 B | 0,24× |
+| DIM80 | 138 | 16 673 642 B | 33 560 071 B | 2,01× |
+
+DIM80 dokončila všech 15 regionů za přibližně 416 sekund při jednom pracovníku. Bylo nezávisle ověřeno všech 138 souborů geometrie a soukromý webový náhled. Kolize a jeskyně v okamžiku tohoto měření ještě běžely/čekaly; čas neoznačuje dokončení všech vrstev. Rozdíl hustoty dokládá, proč ani dvojnásobný scénář není horní mez. Pro další plánování používejte pokud možno vzorek stejné dimenze, ne jen hlavního světa.

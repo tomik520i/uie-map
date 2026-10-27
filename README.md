@@ -8,7 +8,7 @@ UIE Map vytváří interaktivní webovou 3D mapu uloženého světa modovaného 
 
 Směřujeme k samostatnému programu s konfigurací světa, výběrem více dimenzí, automatickými aktualizacemi a úplným návodem. Volitelný Minecraft mod může později doplnit napojení na server. Tyto části ještě nejsou dokončené: [stav a plán vývoje](ROADMAP.md), [naměřené velikosti a orientační výpočty](KAPACITA.md).
 
-Jednotný příkaz `python uiemap.py` už nabízí kontrolu konfigurace, import existujícího exportu do katalogu, render, stav, aktualizace, systemd timer a web. Začněte [instalačním postupem](INSTALACE.md) a [vzorem konfigurace](examples/config.json). Podrobnosti jsou v [KONFIGURACE.md](KONFIGURACE.md); stav jednotlivých dimenzí v [DIMENZE.md](DIMENZE.md). Import libovolného modpacku a úplná automatizace provozu stále čekají.
+Jednotný příkaz `python uiemap.py` už nabízí kontrolu konfigurace, import existujícího exportu do katalogu, render, stav, aktualizace, systemd timer a web. Nový `capacity` spočítá uložené chunky, odhadne geometrii z explicitního vzorku a volitelně změří skutečné obsazení výstupů včetně sdílených souborů. Začněte [instalačním postupem](INSTALACE.md) a [vzorem konfigurace](examples/config.json). Podrobnosti jsou v [KONFIGURACE.md](KONFIGURACE.md); stav jednotlivých dimenzí v [DIMENZE.md](DIMENZE.md). Import libovolného modpacku a úplná automatizace provozu stále čekají.
 
 ## Co už funguje
 
@@ -30,11 +30,11 @@ Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. T
 - Podpora modovaných bloků je neúplná. Některé mají zjednodušený tvar či metadata; chybějící model může být fialový zástupný blok.
 - Bloková data kolizí celé hlavní dimenze jsou nasazená. Tvary některých modovaných bloků zůstávají přibližné; mimo dostupná nebo odpovídající data může chůze používat přibližný terén.
 - Celosvětové exporty jsou dlouhé dávkové úlohy. První úplné průchody povrchu, jeskyní a kolizí jsou dokončené. Regiony pocházejí z různých okamžiků uložení hry. Aktualizace kolizí zatím prochází celý svět; není to okamžitá fronta změn.
-- Veřejná ukázka nabízí hlavní dimenzi a povrch DIM42 s přepínačem. Další dimenze, jejich blokové kolize a jeskynní režim zatím nejsou dokončené.
+- Veřejná ukázka nabízí hlavní dimenzi, DIM42 a DIM82 včetně povrchu, blokových kolizí a jeskyní. DIM42 a DIM82 mají 30min automatické aktualizace a omezený úklid. DIM80,81,83,84,85 se připravují; DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Nová generace obsahuje opravy barev modovaných biomů a registru bloků. Experimentální části zdrojového kódu nemusí odpovídat nasazenému provozu.
 - Opravena byla chyba náhradních názvů chybějících ID: souřadnice ve zprávě o chybě mohly přepsat jiný, známý blok v registru. Přepočítaný povrch, jeskyně i odpovídající kolize jsou již nasazené.
-- Formáty dat a provozní rozhraní se mohou měnit. Obnova po skutečném restartu celého produkčního stroje zatím není kompletně ověřená.
+- Formáty dat a provozní rozhraní se mohou měnit. Mapové služby a veřejný prohlížeč byly ověřeny po skutečném restartu produkčního stroje 26. října; všechny scénáře havárie tím pokryté nejsou.
 
 ## Jak je projekt sestavený
 

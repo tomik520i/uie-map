@@ -33,9 +33,13 @@ class CollisionWebTests(unittest.TestCase):
         self.assertEqual(view['format'],'UIE_MAP_VIEW3');self.assertTrue(view['collisions']);self.assertFalse(view['caves'])
         self.assertNotIn('UIE_COLLISION_STORE',serve.snapshot(self.file,'42')['environment'])
 
-    def test_stale_surface_and_corrupt_pair_refused(self):
+    def test_stale_surface_refused(self):
         self.index(self.stores['42'],'42') # drops atlas identity: no longer matching collision export
         with self.assertRaisesRegex(ValueError,'differs'):serve.snapshot(self.file,'42',include_collisions=True)
+
+    def test_corrupt_pair_refused(self):
+        # Keep surface valid: otherwise another pair may reject its atlas first,
+        # depending on directory iteration order on this filesystem.
         next((self.store/'pairs').glob('*.json')).write_text('{}')
         with self.assertRaisesRegex(ValueError,'hash'):serve.snapshot(self.file,'42',include_collisions=True)
 

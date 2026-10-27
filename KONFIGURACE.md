@@ -197,7 +197,7 @@ python -B uiemap.py status /data/cave-config.json
 
 V jedné konfiguraci může být klíč dimenze uveden jen jednou. Chcete-li pro stejnou dimenzi povrch i caves, použijte dvě konfigurace se stejným world ID, cestami a rozdílným mode. Neplánujte je bez rozmyslu souběžně: každá služba má vlastní limit paměti. `update --gc` a `schedule --gc` odmítnou konfiguraci s caves před spuštěním, protože společný konfigurovaný úklid geometrie a cap dat ještě není připojený.
 
-Ověřeno 24.10. na celé soukromé DIM42: 10 oblastí, 161 dvojic, nulové chyby, přibližně 95 s prvního renderu. Všechny dvojice geometrie a rozbalených cap dat prošly nezávislou kontrolou hashů. Ověřen i navazující skutečný `update`. `serve` zatím přijímá povrchové konfigurace; nový konfigurovaný cave výstup ještě nemá připojený webový režim a není veřejně nasazený.
+Ověřeno 24.10. na celé soukromé DIM42: 10 oblastí, 161 dvojic, nulové chyby, přibližně 95 s prvního renderu. Všechny dvojice geometrie a rozbalených cap dat prošly nezávislou kontrolou hashů. Ověřen i navazující skutečný `update`. Webové připojení je od 27. 10. ověřené soukromě: `serve` přijímá povrchovou konfiguraci a volitelný jeskynní protějšek. Veřejná ukázka tím nebyla přepnutá.
 
 
 ## Kontrola služby po restartu
@@ -205,3 +205,17 @@ Ověřeno 24.10. na celé soukromé DIM42: 10 oblastí, 161 dvojic, nulové chyb
 `python -B uiemap.py services /data/config.json` přečte skutečný stav uživatelského systemd timeru a služby vytvořených příkazem `schedule` pro tuto cestu konfigurace. Načtení konfigurace ani existence světa nejsou potřebné: službu lze dohledat i při poškozeném vstupu. Příkaz nic nespouští, nezastavuje a nepřepisuje.
 
 Výstup rozlišuje `not-installed`, skutečný `active`/`inactive`/`failed` stav a `error` při nedostupném systemd nebo timeoutu. Neaktivní oneshot služba je mezi běhy normální; sledujte také timer a `Result`/`ExecMainStatus`. Návratový kód 2 znamená chybu čtení, nepodporovanou platformu nebo stav `failed`. Chybějící jednotky nejsou vydávány za běžící službu. Příkaz pokrývá pouze jednotky dané konfigurace, nikoli starší ručně instalované produkční služby nebo Minecraft server. Stav renderovaných souborů poskytuje samostatný příkaz `status`.
+
+
+### Připojení jeskyní k vlastnímu webu
+
+```sh
+python uiemap.py serve surface.json --main-dimension 42 --cave-config caves.json
+python uiemap.py serve surface.json --main-dimension 42 --cave-config caves.json --apply
+```
+
+Oba exporty musí být předem publikované. `surface.json` obsahuje povrchové dimenze; `caves.json` jejich vybrané protějšky s `mode: "caves"`. Identita i cesta světa a vybraných dimenzí musí souhlasit. Jeskynní konfigurace může obsahovat jen podmnožinu povrchových dimenzí. Kontrolují se vazby úložišť a souhlas indexu geometrie s indexem uzávěrů řezu. Neúplné nebo nesouvisející indexy spuštění odmítnou.
+
+Výchozí web načítá povrch; zapnutí výškového řezu načte podzemí a uzávěry okolních dlaždic. Vypnutí vrací povrch. Funguje také odkaz `?cut=48`. Připojené jeskyně jsou označené novým bootstrap formátem `UIE_MAP_VIEW2`; staré povrchové soubory `UIE_MAP_VIEW1` zůstávají podporované. Původní konfigurace `UIEMAP_CONFIG1` se nemění. Blokové kolize ani automatická údržba cave dat tím nejsou doplněné.
+
+Ověřeno skutečným prohlížečem na DIM42: povrch → jeskyně → povrch, přímý odkaz s řezem, načtení geometrie i uzávěrů z indexu 161 párů; 8 okolních párů načteno. Výchozí povrch nenačítal cave payloady. Nejde o nově nasazené jeskyně DIM42 ve veřejné ukázce.

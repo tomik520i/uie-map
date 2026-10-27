@@ -10,6 +10,12 @@ import { createMapViewHandler } from './map-view-http.mjs';
 const view = () => ({ format: 'UIE_MAP_VIEW1', world: 'own-world', dimension: '42',
   title: 'Moje dimenze', bounds: { min: [-64, 0, -64], max: [64, 256, 64] }, focus: [0, 80, 0] });
 
+test('version two explicitly declares caves; legacy views cannot silently opt in',()=>{
+  for(const caves of [true,false]) assert.equal(validateMapView({...view(),format:'UIE_MAP_VIEW2',caves}).caves,caves);
+  for(const caves of [null,1,'true',undefined]) assert.throws(()=>validateMapView({...view(),format:'UIE_MAP_VIEW2',caves}));
+  assert.throws(()=>validateMapView({...view(),caves:true}));
+});
+
 test('explicit standalone view preserves identity, owns bounds, has no fictional detail statistics', () => {
   const input = view(), out = validateMapView(input);
   assert.deepEqual(out, input);

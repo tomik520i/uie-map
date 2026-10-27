@@ -2,9 +2,11 @@
 export function validateMapView(value) {
   const fail = message => { throw new Error(`map-view.json: ${message}`); };
   const keys = ['format', 'world', 'dimension', 'title', 'bounds', 'focus'];
+  if (value?.format === 'UIE_MAP_VIEW2') keys.push('caves');
   if (!value || typeof value !== 'object' || Array.isArray(value)
       || Object.keys(value).length !== keys.length || !keys.every(k => Object.hasOwn(value, k))) fail('neplatná struktura');
-  if (value.format !== 'UIE_MAP_VIEW1') fail('nepodporovaný formát');
+  if (!['UIE_MAP_VIEW1','UIE_MAP_VIEW2'].includes(value.format)) fail('nepodporovaný formát');
+  if (value.format === 'UIE_MAP_VIEW2' && typeof value.caves !== 'boolean') fail('neplatná dostupnost jeskyní');
   if (typeof value.world !== 'string' || !/^[\x21-\x7e]{1,128}$/.test(value.world)) fail('neplatný svět');
   const dimension = value.dimension;
   const numeric = typeof dimension === 'string' && /^(0|-?[1-9][0-9]*)$/.test(dimension)

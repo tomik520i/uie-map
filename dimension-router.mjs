@@ -24,7 +24,16 @@ export async function createDimensionRouter(file, mainHandler, createHandler) {
         || typeof item.hiresStore !== 'string' || !path.isAbsolute(item.hiresStore)) throw new Error('Invalid dimension route');
     const view = validateMapView(await jsonFile(item.viewFile, 4096));
     // No inheritance of generation, players, caves or collision stores from the parent.
-    const handler = await createHandler({ UIE_MAP_VIEW_FILE: item.viewFile, UIE_HIRES_STORE: item.hiresStore });
+    const env = { UIE_MAP_VIEW_FILE: item.viewFile, UIE_HIRES_STORE: item.hiresStore };
+    if (view.caves === true) {
+      if (![item.caveGeometryStore,item.cavePairStore].every(v=>typeof v==='string' && path.isAbsolute(v)))
+        throw new Error('Cave view requires both explicitly selected stores');
+      env.UIE_CAVE_GEOMETRY_STORE=item.caveGeometryStore;
+      env.UIE_CAVE_PAIR_STORE=item.cavePairStore;
+    } else if (item.caveGeometryStore !== undefined || item.cavePairStore !== undefined) {
+      throw new Error('Surface-only view cannot attach cave stores');
+    }
+    const handler = await createHandler(env);
     children.set(item.key, { handler, title: view.title, world: view.world, dimension: view.dimension });
   }
   return async (req, res) => {

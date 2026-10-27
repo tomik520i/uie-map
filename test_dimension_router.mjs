@@ -53,6 +53,24 @@ test('child factory receives only explicitly selected stores, never parent confi
   assert.deepEqual(received,[{UIE_MAP_VIEW_FILE:path.join(dir,'view.json'),UIE_HIRES_STORE:dir}]);
 });
 
+test('cave child requires explicit paired stores and forwards only its own paths',async t=>{
+  const {file,dir,config,view}=await setup(t);
+  await writeFile(config.views[0].viewFile,JSON.stringify({...view,format:'UIE_MAP_VIEW2',caves:true}));
+  await assert.rejects(createDimensionRouter(file,()=>{},async()=>()=>{}),/both/);
+  config.views[0].caveGeometryStore=path.join(dir,'caves');
+  config.views[0].cavePairStore=path.join(dir,'caves','cave-data');
+  await writeFile(file,JSON.stringify(config));
+  let received;
+  await createDimensionRouter(file,()=>{},async env=>{received=env;return()=>{};});
+  assert.equal(received.UIE_CAVE_GEOMETRY_STORE,config.views[0].caveGeometryStore);
+  assert.equal(received.UIE_CAVE_PAIR_STORE,config.views[0].cavePairStore);
+  assert.equal(received.UIE_GENERATION_STORE,undefined);
+  config.views[0].cavePairStore='../other';await writeFile(file,JSON.stringify(config));
+  await assert.rejects(createDimensionRouter(file,()=>{},async()=>()=>{}),/both/);
+  await writeFile(config.views[0].viewFile,JSON.stringify(view));
+  await assert.rejects(createDimensionRouter(file,()=>{},async()=>()=>{}),/Surface-only/);
+});
+
 test('invalid or duplicate route and broken bootstrap reject startup',async t=>{
   const {file,config}=await setup(t);
   for (const key of ['main','../main','dim/42','Dim42','']) {

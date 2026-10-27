@@ -18,8 +18,25 @@ def read_json(path,limit):
     return json.loads(raw),raw
 
 
-def snapshot(config_file,main_dimension):
+def snapshot(config_file,main_dimension,cave_config=None):
     doc=config.load(config_file);out=Path(doc['out']);views=[];files={};routes=set()
+    cave_stores={}
+    if cave_config is not None:
+        from uiemap_status import publication
+        companion=config.load(cave_config)
+        if companion['world']!=doc['world']:raise ValueError('Cave configuration belongs to a different world')
+        selected={r['key']:r for r in doc['dimensions']}
+        for row in companion['dimensions']:
+            if row['mode']!='caves' or row['key'] not in selected or row['path']!=selected[row['key']]['path']:
+                raise ValueError('Cave configuration must match selected surface dimensions')
+            store=Path(row['outputs']['caves'])
+            if store.resolve()!=store:raise ValueError('Linked cave output ancestors are not allowed')
+            binding.ensure(store,binding.make_binding(world=doc['world']['path'],world_id=doc['world']['id'],
+                dimension=row['key'],dimension_path=row['path'],mode='caves'))
+            published=publication(store,doc['world']['id'],row['key'],'caves')
+            if published['state']!='published':raise ValueError('Cave geometry and companion caps must be published together')
+            cave_stores[row['key']]=dict(caveGeometryStore=str(store),cavePairStore=str(store/'cave-data'),
+                caveIndexSha256=published['indexSha256'],capIndexSha256=published['capIndexSha256'])
     if len(doc['dimensions'])>33:raise ValueError('The web catalog supports at most 33 dimensions')
     if main_dimension not in [row['key'] for row in doc['dimensions']]:raise ValueError('Main dimension is not selected')
     for row in doc['dimensions']:
@@ -50,19 +67,24 @@ def snapshot(config_file,main_dimension):
         x,z=min(coords,key=lambda p:(p[0]*p[0]+p[1]*p[1],p))
         view=dict(format='UIE_MAP_VIEW1',world=doc['world']['id'],dimension=row['key'],title=row['title'],
                   bounds=bounds,focus=[x*64+32,80,z*64+32])
+        if row['key'] in cave_stores:view.update(format='UIE_MAP_VIEW2',caves=True)
         key='d-'+hashlib.sha256(row['key'].encode()).hexdigest()[:20]
         if key in routes:raise ValueError('Dimension route collision')
         routes.add(key)
         filename=key+'.json';files[filename]=view
-        views.append(dict(key=key,filename=filename,hiresStore=str(store),dimension=row['key'],indexSha256=sha))
+        views.append(dict(key=key,filename=filename,hiresStore=str(store),dimension=row['key'],indexSha256=sha,
+            **cave_stores.get(row['key'],{})))
     identity=json.dumps(dict(files=files,views=views,main=main_dimension,web=doc['web']),sort_keys=True,separators=(',',':')).encode()
     stage=out/('web-config-'+hashlib.sha256(identity).hexdigest())
     main=next(view for view in views if view['dimension']==main_dimension)
     menu=dict(format='UIE_DIMENSION_VIEWS1',mainTitle=files[main['filename']]['title'],views=[
-        dict(key=v['key'],viewFile=str(stage/v['filename']),hiresStore=v['hiresStore']) for v in views if v is not main])
+        dict(key=v['key'],viewFile=str(stage/v['filename']),hiresStore=v['hiresStore'],
+            **{k:v[k] for k in ('caveGeometryStore','cavePairStore') if k in v}) for v in views if v is not main])
     files['dimensions.json']=menu
     env=dict(HOST=doc['web']['host'],PORT=str(doc['web']['port']),UIE_EXTRA_PORTS='',
         UIE_MAP_VIEW_FILE=str(stage/main['filename']),UIE_HIRES_STORE=main['hiresStore'],UIE_DIMENSIONS_FILE=str(stage/'dimensions.json'))
+    if 'caveGeometryStore' in main:
+        env.update(UIE_CAVE_GEOMETRY_STORE=main['caveGeometryStore'],UIE_CAVE_PAIR_STORE=main['cavePairStore'])
     return dict(format='UIEMAP_WEB_PLAN1',directory=str(stage),files=files,environment=env,
         dimensions=[dict(key=v['dimension'],indexSha256=v['indexSha256']) for v in views],readOnly=True)
 
@@ -88,9 +110,10 @@ def write_snapshot(plan):
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('config',type=Path)
     parser.add_argument('--main-dimension',required=True);parser.add_argument('--apply',action='store_true')
+    parser.add_argument('--cave-config',type=Path,help='Optional published cave companion for selected surface dimensions')
     args=parser.parse_args(argv)
     try:
-        plan=snapshot(args.config,args.main_dimension)
+        plan=snapshot(args.config,args.main_dimension,args.cave_config)
         if not args.apply:print(json.dumps(plan,ensure_ascii=False,indent=2));return 0
         node=shutil.which('node')
         if not node:raise ValueError('Node.js is required to serve the viewer')

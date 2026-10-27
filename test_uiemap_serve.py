@@ -55,5 +55,51 @@ class WebConfigTests(unittest.TestCase):
         self.doc['dimensions'][1]['title']='Jiný název';self.file.write_text(json.dumps(self.doc))
         self.assertNotEqual(first['directory'],serve.snapshot(self.file,'42')['directory'])
 
+    def cave_fixture(self):
+        doc=json.loads(json.dumps(self.doc));doc['dimensions']=doc['dimensions'][1:]
+        doc['dimensions'][0]['mode']='caves'
+        file=self.root/'caves.json';file.write_text(json.dumps(doc))
+        row=config.load(file)['dimensions'][0];store=Path(row['outputs']['caves'])
+        (store/'indexes').mkdir(parents=True)
+        (store/binding.NAME).write_bytes(binding.canonical(binding.make_binding(world=self.root/'world',world_id='mine',dimension='42',mode='caves')))
+        index=dict(context=dict(world='mine',dimension='42',caves=True),tiles={'0,0':'a'*64},rendererIdentity='b'*64,atlasSha256='c'*64)
+        raw=json.dumps(index).encode();sha=hashlib.sha256(raw).hexdigest()
+        (store/'indexes'/(sha+'.json')).write_bytes(raw);(store/'current.json').write_text(json.dumps(dict(indexSha256=sha)))
+        cap=dict(format='UIE_CAVE_CAP_INDEX1',geometryIndexSha256=sha,rendererIdentity='b'*64,atlasSha256='c'*64,capIdentity='d'*64,pairs={'0,0':'e'*64})
+        raw=json.dumps(cap,sort_keys=True,separators=(',',':')).encode();sha=hashlib.sha256(raw).hexdigest()
+        (store/'cave-data/indexes').mkdir(parents=True)
+        (store/'cave-data/indexes'/(sha+'.json')).write_bytes(raw)
+        (store/'cave-data/current.json').write_text(json.dumps(dict(format='UIE_CAVE_CAP_POINTER1',indexSha256=sha),sort_keys=True,separators=(',',':')))
+        return file,store
+
+    def test_caves_attach_to_main_or_child_without_inheritance(self):
+        file,store=self.cave_fixture();before=set(self.root.rglob('*'))
+        plan=serve.snapshot(self.file,'0',file)
+        self.assertEqual(before,set(self.root.rglob('*')))
+        self.assertNotIn('UIE_CAVE_PAIR_STORE',plan['environment'])
+        child=plan['files']['dimensions.json']['views'][0]
+        self.assertEqual(child['cavePairStore'],str(store/'cave-data'))
+        self.assertEqual(plan['files'][Path(child['viewFile']).name]['caves'],True)
+        main=serve.snapshot(self.file,'42',file)
+        self.assertEqual(main['environment']['UIE_CAVE_GEOMETRY_STORE'],str(store))
+        self.assertNotEqual(main['directory'],serve.snapshot(self.file,'42')['directory'])
+
+    def test_missing_caps_or_wrong_world_refuse_web_plan(self):
+        file,store=self.cave_fixture()
+        (store/'cave-data/current.json').unlink()
+        with self.assertRaisesRegex(ValueError,'published together'):serve.snapshot(self.file,'42',file)
+        doc=json.loads(file.read_text());doc['world']['id']='other';file.write_text(json.dumps(doc))
+        with self.assertRaisesRegex(ValueError,'different world'):serve.snapshot(self.file,'42',file)
+
+    def test_new_geometry_cannot_reuse_old_cap_index(self):
+        file,store=self.cave_fixture()
+        pointer=json.loads((store/'current.json').read_text())
+        doc=json.loads((store/'indexes'/(pointer['indexSha256']+'.json')).read_text())
+        doc['tiles']['0,0']='f'*64
+        raw=json.dumps(doc).encode();sha=hashlib.sha256(raw).hexdigest()
+        (store/'indexes'/(sha+'.json')).write_bytes(raw)
+        (store/'current.json').write_text(json.dumps(dict(indexSha256=sha)))
+        with self.assertRaisesRegex(ValueError,'published together'):serve.snapshot(self.file,'42',file)
+
 
 if __name__=='__main__':unittest.main()

@@ -47,6 +47,7 @@ def main(argv=None):
     render.add_argument('--apply',action='store_true',help='Actually run render and publication')
     serve=commands.add_parser('serve',help='Plan or start the web viewer for published surface stores')
     serve.add_argument('config',type=Path);serve.add_argument('--main-dimension',required=True)
+    serve.add_argument('--cave-config',type=Path)
     serve.add_argument('--apply',action='store_true',help='Write web configuration and start Node in foreground')
     args=parser.parse_args(argv)
     if args.command=='check':return uiemap_config.main([str(args.config)])
@@ -60,7 +61,8 @@ def main(argv=None):
     if args.command=='catalog':return catalog_package.main(['--source',str(args.source),'--out',str(args.out)]+(['--apply'] if args.apply else []))
     if args.command=='render':
         return uiemap_render.main([str(args.config),'--dimension',args.dimension]+(['--apply'] if args.apply else []))
-    return uiemap_serve.main([str(args.config),'--main-dimension',args.main_dimension]+(['--apply'] if args.apply else []))
+    return uiemap_serve.main([str(args.config),'--main-dimension',args.main_dimension]+(['--apply'] if args.apply else [])
+        +(['--cave-config',str(args.cave_config)] if args.cave_config else []))
 
 
 if __name__=='__main__':raise SystemExit(main())

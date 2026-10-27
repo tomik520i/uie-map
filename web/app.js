@@ -1370,7 +1370,8 @@ function updateWorldCaves() {
         +(info.state==='loading'?'Načítám index. ':info.state==='unavailable'?'Pro tuto geometrii není podzemní index. ':'')
         +(info.error?`Chyba: ${info.error}. `:'')
         +(info.budgetLimited?'Část uzávěrů čeká na volnou paměť. ':'')
-        +'Částečné modované tvary mají zjednodušený řez. Pokrytí světa najdeš v panelu aktualizací.';
+         +'Částečné modované tvary mají zjednodušený řez. '
+         +(state.mapView?'Zobrazuje se publikované podzemí této dimenze.':'Pokrytí světa najdeš v panelu aktualizací.');
     },
   });
   const level=$('opt-cut-cap').checked&&Number.isInteger(state.cut)&&state.cut>=0&&state.cut<=255?state.cut:null;
@@ -1395,7 +1396,7 @@ async function loadHiresIndex() {
       // Pointer + content-addressed index, both bodies inside this timeout; an unchanged pointer keeps everything.
       index = await loadImmutableHiresIndex({ baseUrl: sourceBase, sha256Hex, current:hires.sourceBase===sourceBase?hires.index:null, expectedWorld: state.mapIdentity,
         fetch: (url, init) => fetch(url, { ...init, signal: controller.signal }) });
-      if (state.mapView && index.context?.caves !== false) throw new Error('Samostatný povrch vyžaduje povrchovou geometrii.');
+      if (state.mapView && index.context?.caves !== sourceBase.endsWith('/cave-geometry/')) throw new Error('Geometrie neodpovídá vybranému režimu dimenze.');
       if(sourceBase!==desiredHiresBase())return;
       if(sourceBase.endsWith('/cave-geometry/')&&index.context?.caves!==true)throw new Error('Podzemní úložiště neobsahuje podzemní geometrii.');
       if (index === hires.index) return;
@@ -1440,7 +1441,7 @@ function showHiresPublication(index) {
   // These badges describe the legacy detail sample, not the streamed world store.
   for (const id of ['sample-badge', 'sample-note', 'sample-flag']) $(id).hidden = true;
   if(WORLD_CAVES&&index.context?.caves===true){
-    $('title').textContent='UIE · podzemí světa';document.title=$('title').textContent;
+    $('title').textContent=state.mapView?`${state.mapView.title} · podzemí`:'UIE · podzemí světa';document.title=$('title').textContent;
     return; // The surface publication panel continues to describe its own store.
   }
   // Detail generation refreshes must not relabel the loaded whole-world surface as a sample.
@@ -2684,8 +2685,8 @@ function startStandaloneView(view) {
   state.bounds = view.bounds;
   state.focus = view.focus;
   state.cut = null;
-  state.cutRequest = null;
-  WORLD_CAVES = false; // UIE_MAP_VIEW1 currently describes a surface-only store.
+  WORLD_CAVES = WORLD_CAVES && view.caves === true;
+  if (!WORLD_CAVES) state.cutRequest = null;
   $('title').textContent = view.title;
   document.title = view.title;
   const { min, max } = view.bounds;
@@ -2693,13 +2694,19 @@ function startStandaloneView(view) {
   $('bounds').textContent = `X ${min[0]} … ${max[0]} · Z ${min[2]} … ${max[2]} · Y ${min[1]} … ${max[1]}`;
   $('render').hidden = true;
   $('cov-rendered').closest('section').hidden = true;
-  for (const id of ['opt-cut', 'cut-level', 'opt-cut-cap', 'opt-overview', 'opt-players']) $(id).disabled = true;
+  for (const id of ['opt-overview', 'opt-players']) $(id).disabled = true;
+  if (!WORLD_CAVES) for (const id of ['opt-cut','cut-level','opt-cut-cap']) $(id).disabled=true;
   const note = document.createElement('p'); note.className = 'note';
-  note.textContent = `Samostatný povrch dimenze ${view.dimension}. Jeskyně, hráči a bloková data chůze zde zatím nejsou připojené; chůze používá přibližnou geometrii.`;
+  note.textContent = `Dimenze ${view.dimension}. ${WORLD_CAVES?'Jeskyně jsou připojené; zapni výškový řez.':'Jeskyně nejsou připojené.'} Hráči a bloková data chůze zde zatím nejsou připojené; chůze používá přibližnou geometrii.`;
   $('bounds').closest('section').append(note);
+  const cutHelp=$('opt-cut-cap').closest('label').nextElementSibling;
+  if(cutHelp) cutHelp.textContent=WORLD_CAVES
+    ? 'Výškový řez načítá publikované podzemí této dimenze. Uzavření řezu zobrazuje horninu, vodu a lávu; jeskyně zůstávají otvory. Mimo exportovanou oblast nejsou data. Odkaz: ?cut=40.'
+    : 'Pro tuto dimenzi není připojený jeskynní export; výškový řez není dostupný.';
   resetCamera();
   enableNavigation();
   startFlyMode();
+  if (WORLD_CAVES) configureCut();
   applyDisplayOptions();
   setStatus('loading', 'Načítám povrch dimenze…');
   startHires();

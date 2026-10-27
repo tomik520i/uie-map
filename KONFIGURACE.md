@@ -283,3 +283,8 @@ python uiemap.py schedule caves.json --cave-gc --interval 1800 --apply
 Bez `--geometry` zůstává `cave-gc` úklidem doprovodných dat. S touto volbou spravuje root geometrii,indexy,atlasy a rozložení; všechny stále existující jeskynní indexy a páry chrání své odkazy. Poškozená metadata zastaví plán. Automatické `--cave-gc` po publikaci nejprve uklízí doprovodná data, potom znovu vyhodnotí ochranu a uklízí geometrii. Každá fáze má limit64souborů/16MiB; jde o logické velikosti, hardlinky mohou znamenat menší skutečnou úsporu. Svět,katalog a klientské prostředky se nemažou.
 
 Ověřeno na oddělené DIM42 a nasazeno pro hlavní veřejný svět i DIM42. První dva hlavní průchody každý odstranily tři staré jeskynní indexy a tři odpovídající geometrické indexy, aktuální publikace zůstaly stejné. Provoz hlavního úklidu dosáhl přibližně384MiB paměti. Existující odlišnou systemd jednotku generátor nepřepisuje.
+
+
+### Kapacita před renderem
+
+`python uiemap.py capacity mapa.json` provede inventář vybraných dimenzí bez zápisu. Volitelný `--sample-store` přidá odhad geometrie podle existující publikace stejného režimu. `--generations 2` modeluje dvě celé generace bez sdílení. Rozsah a omezení jsou v [KAPACITA.md](KAPACITA.md); nejde o celkovou potřebu disku ani příslib času renderu.

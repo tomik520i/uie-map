@@ -14,6 +14,7 @@ import uiemap_gc
 import uiemap_services
 import uiemap_cave_gc
 import uiemap_collisions
+import uiemap_capacity
 
 
 def main(argv=None):
@@ -26,6 +27,9 @@ def main(argv=None):
     check.add_argument('config',type=Path)
     status=commands.add_parser('status',help='Show recorded progress and independently verified publication metadata')
     status.add_argument('config',type=Path)
+    capacity=commands.add_parser('capacity',help='Count saved chunks and estimate geometry from an explicit sample')
+    capacity.add_argument('config',type=Path);capacity.add_argument('--sample-store',type=Path)
+    capacity.add_argument('--generations',type=int,default=2)
     services=commands.add_parser('services',help='Read actual systemd timer/service state for a configuration path')
     services.add_argument('config',type=Path)
     update=commands.add_parser('update',help='Plan or run one sequential update pass of configured dimensions')
@@ -70,6 +74,7 @@ def main(argv=None):
     args=parser.parse_args(argv)
     if args.command=='check':return uiemap_config.main([str(args.config)])
     if args.command=='status':return uiemap_status.main([str(args.config)])
+    if args.command=='capacity':return uiemap_capacity.main([str(args.config),'--generations',str(args.generations)]+(['--sample-store',str(args.sample_store)] if args.sample_store else []))
     if args.command=='services':return uiemap_services.main([str(args.config)])
     if args.command=='gc':return uiemap_gc.main([str(args.config),'--dimension',args.dimension,
         '--max-files',str(args.max_files),'--max-bytes',str(args.max_bytes)]+(['--apply'] if args.apply else []))

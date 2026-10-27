@@ -38,4 +38,32 @@ Jde o odhad podle adresáře jedné instalace, nikoli garantovanou kompresi nebo
 
 Měřte rychlost při stejném počtu pracovníků a souběžných úlohách; zahrňte opakované výpočty a publikaci. Dvojnásobek pracovníků nemusí znamenat dvojnásobnou rychlost. Nether či jiná dimenze mohou mít zcela jinou složitost než hlavní svět. První minuty po spuštění nejsou spolehlivý benchmark.
 
-Pro volný disk plánujte `nová data + dočasné soubory + ponechané staré generace + provozní rezerva`; existující obsazení počítejte jen jednou. Automatické měření vzorku a kapacitní odhad v budoucím jednotném programu jsou **plánované**, nikoli již dostupný instalační průvodce.
+Pro volný disk plánujte `nová data + dočasné soubory + ponechané staré generace + provozní rezerva`; existující obsazení počítejte jen jednou. Read-only příkaz `capacity` je dostupný; úplný instalační průvodce a odhad všech vrstev zůstávají rozpracované.
+
+
+## Automatický inventář a odhad geometrie (27. 10. 2026)
+
+```sh
+python uiemap.py capacity mapa.json
+python uiemap.py capacity mapa.json --sample-store /cesta/k/publikovanemu/povrchu --generations 2
+```
+
+Příkaz čte pouze hlavičky regionů vybraných dimenzí, spočítá uložené chunky a obsazené dlaždice 64×64 bloků. Nezapisuje do světa, nespouští renderer a nerezervuje disk. Kontroluje rozsahy sektorů, jejich překryvy a změnu souboru během čtení. Hlavička ale nepotvrzuje správnost NBT a jednotlivá čtení nejsou atomický snímek celého živého světa.
+
+Bez `--sample-store` nevymýšlí sazbu. S publikovaným vzorkem stejného režimu načte ověřený index a změří velikosti odkazované geometrie. Neprovádí úplné hashování payloadů (`payloadHashesVerified: false`). Výsledný JSON uvádí scénář jedné generace, zvoleného počtu generací bez sdílení a dvojnásobné hustoty. **Dvojnásobek není garantovaná horní mez.** Pro jeskyně použijte konfiguraci v režimu `caves` a jeskynní vzorek; povrchový vzorek je odmítnut.
+
+Nezahrnuje atlas, metadata, kolize, uzávěry řezů, pracovní soubory, zálohy ani provozní rezervu. Čas a RAM z velikosti geometrie neodhaduje. Nether je v reportu výslovně nepodporovaný; ostatní neprázdné dimenze potřebují skutečné ověření renderu. Úspěšný inventář není potvrzení podpory modpacku.
+
+Aktuální příklad sedmi dalších dimenzí vývojového světa:
+
+| Dimenze | Regiony | Uložené chunky | Obsazené dlaždice |
+| --- | ---: | ---: | ---: |
+| 82 | 1 | 1 | 1 |
+| -112 | 9 | 695 | 157 |
+| 80 | 15 | 1689 | 138 |
+| 81 | 12 | 523 | 48 |
+| 83 | 10 | 749 | 161 |
+| 84 | 10 | 758 | 161 |
+| 85 | 12 | 1012 | 82 |
+
+Celkem 748 obsazených dlaždic. Změřená aktuální hlavní dimenze má přibližně 118.0 KiB povrchové a 279.1 KiB jeskynní geometrie na dlaždici. Přenos této hustoty na další dimenze dává **86.2 MiB povrchu + 203.9 MiB jeskyní**, dohromady 290.1 MiB pro jednu generaci. Dvě celé nesdílené generace při dvojnásobné hustotě by měly 1160.2 MiB samotné geometrie. Jde o scénář, který se teprve porovnává s jejich skutečným renderem; není to naměřený konečný výstup těchto dimenzí.

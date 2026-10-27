@@ -1,4 +1,5 @@
 import hashlib,json,tempfile,unittest,os
+from unittest.mock import patch
 from pathlib import Path
 import uiemap_capacity as capacity
 import hires_bundle as hb
@@ -53,5 +54,9 @@ class CapacityTests(unittest.TestCase):
         config=capacity.uiemap_config.load(self.config);surface=Path(config['dimensions'][0]['outputs']['surface']);surface.mkdir(parents=True)
         (surface/'linked').symlink_to(self.root/'world',target_is_directory=True)
         with self.assertRaisesRegex(ValueError,'Linked'):capacity.output_usage(config)
+    def test_unreadable_output_does_not_report_zero_usage(self):
+        config=capacity.uiemap_config.load(self.config)
+        with patch.object(Path,'lstat',side_effect=PermissionError('denied')):
+            with self.assertRaises(PermissionError):capacity.output_usage(config)
 
 if __name__=='__main__':unittest.main()

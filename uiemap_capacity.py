@@ -75,8 +75,8 @@ def output_usage(config,*,max_entries=500000):
     for dimension in config['dimensions']:
         for mode in ('surface','collisions','caves'):
             root=Path(dimension['outputs'][mode])
-            if not root.exists():
-                if root.is_symlink():raise ValueError('Linked output directory')
+            try:root.lstat()
+            except FileNotFoundError:
                 rows.append(dict(dimension=dimension['key'],mode=mode,state='not-created'));continue
             if root.resolve()!=root:raise ValueError('Linked output directory')
             layout.plain_directory(root)

@@ -115,5 +115,26 @@ class UpdateTests(unittest.TestCase):
             update.execute(work,collisions=True)
         run.assert_not_called()
 
+    def test_collision_failure_never_runs_collection(self):
+        work=self.work()
+        def run(command,**kwargs):
+            if command[2].endswith('uiemap_collisions.py'):
+                return subprocess.CompletedProcess([],1,'','disk floor reached')
+            return self.reply(work['jobs'][0])
+        with patch.object(update.uiemap_gc,'collect') as gc:
+            result=update.execute(work,run,cleanup=True,collisions=True)
+        gc.assert_not_called();self.assertFalse(result['complete'])
+        self.assertIn('disk floor',result['error']);self.assertTrue(result['results'][0]['published'])
+
+    def test_configuration_changed_by_collision_child_is_rejected(self):
+        work=self.work()
+        def run(command,**kwargs):
+            if command[2].endswith('uiemap_collisions.py'):
+                self.file.write_text(self.file.read_text()+' ')
+                return subprocess.CompletedProcess([],0,'{}','')
+            return self.reply(work['jobs'][0])
+        with self.assertRaisesRegex(ValueError,'changed during collision'):
+            update.execute(work,run,collisions=True)
+
 
 if __name__=='__main__':unittest.main()

@@ -1,6 +1,6 @@
 # Dimenze — rozpoznání, render a webový přepínač
 
-**HOTOVO:** rozpoznání adresářů, oddělený render přes CLI a samostatný webový pohled. Ve veřejné ukázce je přepínač hlavního světa a skutečné DIM42. DIM42 jeskyně jsou veřejně dostupné od27.10. včetně30min aktualizací. Jednotná konfigurace podporuje povrch, jeskyně a jednorázový export kolizí. **ČEKÁ:** další dimenze a úplná provozní automatizace. Následující příkaz pro rozpoznání nic nerenderuje ani nezapisuje.
+**HOTOVO:** rozpoznání adresářů, oddělený render přes CLI a samostatný webový pohled. Ve veřejné ukázce je přepínač hlavního světa, DIM42 a DIM82. DIM42 jeskyně jsou veřejně dostupné od27.10. včetně30min aktualizací. Jednotná konfigurace podporuje povrch, jeskyně a jednorázový export kolizí. **ROZDĚLANÉ:** render DIM80,81,83,84,85; úplná provozní automatizace. Následující příkaz pro rozpoznání nic nerenderuje ani nezapisuje.
 
 ```sh
 python world_layout.py /cesta/k/vlastnimu/svetu
@@ -77,3 +77,13 @@ Samostatná instance používá `UIE_MAP_VIEW_FILE=/data/maps/dim42/view.json` a
 Katalog se načítá při startu webového serveru. Hlavní nastavení zůstává v jeho dosavadních proměnných. Další dimenze je dostupná na relativní adrese `dimensions/dim42/`; odkazy fungují i za proxy pod `/map/uie/`. Přepnutí načítá novou stránku, takže nepřenáší staré kolize ani geometrii. Každý další pohled má oddělené nastavení bez dědění dat hlavního světa. Neznámá dimenze vrátí404, poškozený explicitní bootstrap vrátí chybu místo zobrazení jiného světa. Katalog nepublikuje lokální cesty.
 
 Vstupem serveru zůstává `node server.mjs`; tento soubor je kompatibilní i s importem z PM2 wrapperu. `map-handler.mjs` je interní factory bez spouštění portu při importu.
+
+
+## Další dimenze — stav 27. 10.
+
+- **HOTOVO / NASAZENO: DIM82.** Jeden uložený chunk, jedna dlaždice povrchu, odpovídající kolizní data a jeskynní řez. Payloady nezávisle ověřeny; veřejný prohlížeč prošel přepnutím z hlavního světa, řezem a návratem. Dva 30min časovače obnovují povrch→kolize a jeskyně, včetně omezeného úklidu historie. První skutečné běhy dokončeny bez chyb. Jeden sloupec terénu odpovídá uloženému rozsahu, nejde o nedokončený render větší dimenze.
+- **BEZ TERÉNU: DIM−112.** Hlavičky obsahují 695 uložených chunků, ale úplné čtení jejich NBT potvrdilo nulový počet blokových sekcí. Prázdnou mapu nepublikujeme. Renderer po chybě přípravy nyní skončí s důvodem a nečeká zbytečně na publikaci.
+- **ROZDĚLANÉ: DIM80,81,83,84,85.** Skutečně spuštěná sekvenční fronta povrch→kolize→jeskyně. Veřejné připojení následuje po kontrole konkrétní dimenze.
+- **ČEKÁ: Nether.** Současný konfigurovaný renderer jej odmítá; potřebuje řešení viditelnosti pod stropem. Odstranění kontroly ID samo o sobě podporu nepřidá.
+
+Číselná ID jsou identitou konkrétního světa. Neodvozujeme z nich název planety či modu bez ověření konfigurace. Počty uložených chunků a odhad geometrie umí nový příkaz `uiemap capacity`; podrobnosti v [KAPACITA.md](KAPACITA.md).

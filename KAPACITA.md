@@ -67,3 +67,10 @@ Aktuální příklad sedmi dalších dimenzí vývojového světa:
 | 85 | 12 | 1012 | 82 |
 
 Celkem 748 obsazených dlaždic. Změřená aktuální hlavní dimenze má přibližně 118.0 KiB povrchové a 279.1 KiB jeskynní geometrie na dlaždici. Přenos této hustoty na další dimenze dává **86.2 MiB povrchu + 203.9 MiB jeskyní**, dohromady 290.1 MiB pro jednu generaci. Dvě celé nesdílené generace při dvojnásobné hustotě by měly 1160.2 MiB samotné geometrie. Jde o scénář, který se teprve porovnává s jejich skutečným renderem; není to naměřený konečný výstup těchto dimenzí.
+
+
+### Proč samotná geometrie nestačí: skutečná DIM82
+
+Po prvním automatickém updatu má jediná dlaždice DIM82 29 269 B povrchové a 29 442 B jeskynní geometrie. Celé tři výstupní adresáře ale společně zabírají **56 209 408 B ≈ 53,6 MiB přidělených souborových bloků**. Toto měření započítalo každý inode jen jednou i napříč vrstvami; adresářová metadata, společný vstupní katalog a zálohy nezahrnuje. Obsahuje přítomné indexy, atlasy, pracovní data a historii. Jde o živé, neatomické měření po dokončeném updatu.
+
+U maličké dimenze převládá pevná režie, zejména kopie atlasů. Násobení 53,6 MiB počtem dlaždic by bylo stejně chybné jako prohlášení, že celá dimenze potřebuje jen 59 kB. Pro kapacitní plán je nutné oddělit pevnou režii každé dimenze/vrstvy, proměnlivou geometrii a provozní rezervu. DIM−112 navíc prokazatelně neobsahuje žádné bloky, přesto má obsazené záznamy chunků; odhad z pouhých hlaviček ji proto nadhodnocuje.

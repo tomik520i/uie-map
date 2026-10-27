@@ -16,6 +16,13 @@ test('version two explicitly declares caves; legacy views cannot silently opt in
   assert.throws(()=>validateMapView({...view(),caves:true}));
 });
 
+test('version three declares independent collision and cave capabilities',()=>{
+  for(const caves of [true,false]) for(const collisions of [true,false])
+    assert.equal(validateMapView({...view(),format:'UIE_MAP_VIEW3',caves,collisions}).collisions,collisions);
+  assert.throws(()=>validateMapView({...view(),format:'UIE_MAP_VIEW3',caves:true}));
+  assert.throws(()=>validateMapView({...view(),format:'UIE_MAP_VIEW2',caves:true,collisions:true}));
+});
+
 test('explicit standalone view preserves identity, owns bounds, has no fictional detail statistics', () => {
   const input = view(), out = validateMapView(input);
   assert.deepEqual(out, input);

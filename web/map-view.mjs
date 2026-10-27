@@ -2,11 +2,13 @@
 export function validateMapView(value) {
   const fail = message => { throw new Error(`map-view.json: ${message}`); };
   const keys = ['format', 'world', 'dimension', 'title', 'bounds', 'focus'];
-  if (value?.format === 'UIE_MAP_VIEW2') keys.push('caves');
+  if (['UIE_MAP_VIEW2','UIE_MAP_VIEW3'].includes(value?.format)) keys.push('caves');
+  if (value?.format === 'UIE_MAP_VIEW3') keys.push('collisions');
   if (!value || typeof value !== 'object' || Array.isArray(value)
       || Object.keys(value).length !== keys.length || !keys.every(k => Object.hasOwn(value, k))) fail('neplatná struktura');
-  if (!['UIE_MAP_VIEW1','UIE_MAP_VIEW2'].includes(value.format)) fail('nepodporovaný formát');
-  if (value.format === 'UIE_MAP_VIEW2' && typeof value.caves !== 'boolean') fail('neplatná dostupnost jeskyní');
+  if (!['UIE_MAP_VIEW1','UIE_MAP_VIEW2','UIE_MAP_VIEW3'].includes(value.format)) fail('nepodporovaný formát');
+  if (value.format !== 'UIE_MAP_VIEW1' && typeof value.caves !== 'boolean') fail('neplatná dostupnost jeskyní');
+  if (value.format === 'UIE_MAP_VIEW3' && typeof value.collisions !== 'boolean') fail('neplatná dostupnost kolizí');
   if (typeof value.world !== 'string' || !/^[\x21-\x7e]{1,128}$/.test(value.world)) fail('neplatný svět');
   const dimension = value.dimension;
   const numeric = typeof dimension === 'string' && /^(0|-?[1-9][0-9]*)$/.test(dimension)

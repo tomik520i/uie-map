@@ -1,3 +1,5 @@
+> Aktualizace 27.10.2026: DIM42 povrch **NASAZEN**, jeskyně **NASAZENÉ** včetně 30min aktualizací. Konfigurovaný export kolizí a web **OVĚŘENÉ SOUKROMĚ**; veřejné kolize DIM42 a pravidelná obnova jejího povrchu **ČEKÁ**. Konfigurovaný omezený cave companion GC je **OVĚŘENÝ SOUKROMĚ**. Tento stav nahrazuje starší poznámky níže o čekajících jeskyních.
+
 # Dimenze — rozpoznání, render a webový přepínač
 
 **HOTOVO:** rozpoznání adresářů, oddělený render přes CLI a samostatný webový pohled. Ve veřejné ukázce je přepínač hlavního světa a skutečné DIM42. **ČEKÁ:** další dimenze, jejich blokové kolize a jeskyně, propojení s jednotnou konfigurací. Následující příkaz pro rozpoznání nic nerenderuje ani nezapisuje.

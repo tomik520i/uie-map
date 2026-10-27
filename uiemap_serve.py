@@ -18,7 +18,27 @@ def read_json(path,limit):
     return json.loads(raw),raw
 
 
-def snapshot(config_file,main_dimension,cave_config=None):
+def collision_publication(store,geometry):
+    import collision_bundle as cb
+    import collision_world_store as cs
+    sha=cs._read_pointer(store)
+    if sha is None:raise ValueError('Collision export is not published')
+    pairs=cs._read_index(store,sha)
+    if set(pairs)!=set(geometry['tiles']):raise ValueError('Collision coverage differs from the surface')
+    for key,pair_sha in pairs.items():
+        raw=cb._read_object(store,'pairs',pair_sha+'.json',cb.MAX_PAIR_BYTES)
+        if hashlib.sha256(raw).hexdigest()!=pair_sha:raise ValueError('Collision pair hash mismatch')
+        pair=json.loads(raw);x,z=map(int,key.split(','))
+        if (not isinstance(pair,dict) or set(pair)!={'format','x','z','atlasSha256','geometrySha256','blocksSha256'}
+            or cb.canonical(pair)!=raw or pair['format']!=cb.PAIR_FORMAT
+            or type(pair['x']) is not int or type(pair['z']) is not int or (pair['x'],pair['z'])!=(x*64,z*64)
+            or pair['geometrySha256']!=geometry['tiles'][key] or pair['atlasSha256']!=geometry.get('atlasSha256')
+            or not isinstance(pair['blocksSha256'],str) or not HEX.fullmatch(pair['blocksSha256'])):
+            raise ValueError('Collision pair differs from the selected surface')
+    return sha
+
+
+def snapshot(config_file,main_dimension,cave_config=None,include_collisions=False):
     doc=config.load(config_file);out=Path(doc['out']);views=[];files={};routes=set()
     cave_stores={}
     if cave_config is not None:
@@ -68,23 +88,33 @@ def snapshot(config_file,main_dimension,cave_config=None):
         view=dict(format='UIE_MAP_VIEW1',world=doc['world']['id'],dimension=row['key'],title=row['title'],
                   bounds=bounds,focus=[x*64+32,80,z*64+32])
         if row['key'] in cave_stores:view.update(format='UIE_MAP_VIEW2',caves=True)
+        collision={}
+        if include_collisions:
+            collision_out=Path(row['outputs']['collisions'])
+            if collision_out.resolve()!=collision_out:raise ValueError('Linked collision output ancestors are not allowed')
+            binding.ensure(collision_out,binding.make_binding(world=doc['world']['path'],world_id=doc['world']['id'],
+                dimension=row['key'],dimension_path=row['path'],mode='collisions'))
+            collision_store=collision_out/'store'
+            collision=dict(collisionStore=str(collision_store),collisionIndexSha256=collision_publication(collision_store,index))
+            view.update(format='UIE_MAP_VIEW3',caves=row['key'] in cave_stores,collisions=True)
         key='d-'+hashlib.sha256(row['key'].encode()).hexdigest()[:20]
         if key in routes:raise ValueError('Dimension route collision')
         routes.add(key)
         filename=key+'.json';files[filename]=view
         views.append(dict(key=key,filename=filename,hiresStore=str(store),dimension=row['key'],indexSha256=sha,
-            **cave_stores.get(row['key'],{})))
+            **cave_stores.get(row['key'],{}),**collision))
     identity=json.dumps(dict(files=files,views=views,main=main_dimension,web=doc['web']),sort_keys=True,separators=(',',':')).encode()
     stage=out/('web-config-'+hashlib.sha256(identity).hexdigest())
     main=next(view for view in views if view['dimension']==main_dimension)
     menu=dict(format='UIE_DIMENSION_VIEWS1',mainTitle=files[main['filename']]['title'],views=[
         dict(key=v['key'],viewFile=str(stage/v['filename']),hiresStore=v['hiresStore'],
-            **{k:v[k] for k in ('caveGeometryStore','cavePairStore') if k in v}) for v in views if v is not main])
+            **{k:v[k] for k in ('caveGeometryStore','cavePairStore','collisionStore') if k in v}) for v in views if v is not main])
     files['dimensions.json']=menu
     env=dict(HOST=doc['web']['host'],PORT=str(doc['web']['port']),UIE_EXTRA_PORTS='',
         UIE_MAP_VIEW_FILE=str(stage/main['filename']),UIE_HIRES_STORE=main['hiresStore'],UIE_DIMENSIONS_FILE=str(stage/'dimensions.json'))
     if 'caveGeometryStore' in main:
         env.update(UIE_CAVE_GEOMETRY_STORE=main['caveGeometryStore'],UIE_CAVE_PAIR_STORE=main['cavePairStore'])
+    if 'collisionStore' in main:env['UIE_COLLISION_STORE']=main['collisionStore']
     return dict(format='UIEMAP_WEB_PLAN1',directory=str(stage),files=files,environment=env,
         dimensions=[dict(key=v['dimension'],indexSha256=v['indexSha256']) for v in views],readOnly=True)
 
@@ -111,9 +141,10 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('config',type=Path)
     parser.add_argument('--main-dimension',required=True);parser.add_argument('--apply',action='store_true')
     parser.add_argument('--cave-config',type=Path,help='Optional published cave companion for selected surface dimensions')
+    parser.add_argument('--collisions',action='store_true',help='Attach verified collision metadata for every selected dimension')
     args=parser.parse_args(argv)
     try:
-        plan=snapshot(args.config,args.main_dimension,args.cave_config)
+        plan=snapshot(args.config,args.main_dimension,args.cave_config,args.collisions)
         if not args.apply:print(json.dumps(plan,ensure_ascii=False,indent=2));return 0
         node=shutil.which('node')
         if not node:raise ValueError('Node.js is required to serve the viewer')

@@ -84,6 +84,18 @@ test('invalid or duplicate route and broken bootstrap reject startup',async t=>{
   await assert.rejects(createDimensionRouter(file,()=>{},async()=>()=>{}));
 });
 
+test('collision child needs its own explicit store',async t=>{
+  const {file,dir,config,view}=await setup(t);
+  await writeFile(config.views[0].viewFile,JSON.stringify({...view,format:'UIE_MAP_VIEW3',caves:false,collisions:true}));
+  await assert.rejects(createDimensionRouter(file,()=>{},async()=>()=>{}),/own store/);
+  config.views[0].collisionStore=path.join(dir,'collision');await writeFile(file,JSON.stringify(config));
+  let received;await createDimensionRouter(file,()=>{},async env=>{received=env;return()=>{};});
+  assert.equal(received.UIE_COLLISION_STORE,config.views[0].collisionStore);
+  assert.equal(received.UIE_CAVE_PAIR_STORE,undefined);
+  await writeFile(config.views[0].viewFile,JSON.stringify(view));
+  await assert.rejects(createDimensionRouter(file,()=>{},async()=>()=>{}),/capability/);
+});
+
 test('menu forbids external links, path escapes, duplicate keys and unknown active view',()=>{
   const valid={format:'UIE_DIMENSION_MENU1',active:'main',entries:[{key:'main',title:'SvÄ›t',href:'./'}]};
   assert.equal(validateDimensionMenu(valid),valid);

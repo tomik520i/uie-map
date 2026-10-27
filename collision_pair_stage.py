@@ -41,7 +41,8 @@ def _immutable(path, payload):
 
 
 def stage_pair(store, hires_store, volume, mesh, *, max_new_bytes=8 * 1024**2,
-               min_free_bytes=24 * 1024**3, disk_free=lambda p: shutil.disk_usage(p).free):
+               min_free_bytes=24 * 1024**3, disk_free=lambda p: shutil.disk_usage(p).free, read_index=None):
+    read_index = probe.read_visible if read_index is None else read_index
     store, hires_store = _directory(store), _directory(hires_store)
     if store == hires_store or store.is_relative_to(hires_store) or hires_store.is_relative_to(store):
         raise ValueError('collision and geometry stores must be separate')
@@ -49,7 +50,7 @@ def stage_pair(store, hires_store, volume, mesh, *, max_new_bytes=8 * 1024**2,
     if core.width != 64 or core.depth != 64 or core.x % 64 or core.z % 64:
         raise ValueError('pair requires an aligned 64x64 core')
     key = f'{core.x // 64},{core.z // 64}'
-    before = probe.read_visible(hires_store)
+    before = read_index(hires_store)
     if key in before['stale'] or key not in before['tiles']:
         raise ValueError('tile is not a current published surface tile')
     geometry = wh.encode_tile(core.x, core.z, [d for _, d in sorted(mesh['chunks'].items())])
@@ -90,7 +91,7 @@ def stage_pair(store, hires_store, volume, mesh, *, max_new_bytes=8 * 1024**2,
     if probe._read_bounded(target, cb.MAX_OBJECT_BYTES, 'linked geometry') != geometry:
         raise ValueError('geometry changed while linking')
     _immutable(store / 'objects' / (blocks_sha + '.uib'), blocks)
-    after = probe.read_visible(hires_store)
+    after = read_index(hires_store)
     if (after['tiles'].get(key) != geometry_sha or key in after['stale']
             or after['atlasSha256'] != before['atlasSha256'] or after['identity'] != before['identity']):
         raise ValueError('published surface changed while staging')

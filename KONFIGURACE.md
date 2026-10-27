@@ -219,3 +219,25 @@ Oba exporty musí být předem publikované. `surface.json` obsahuje povrchové 
 Výchozí web načítá povrch; zapnutí výškového řezu načte podzemí a uzávěry okolních dlaždic. Vypnutí vrací povrch. Funguje také odkaz `?cut=48`. Připojené jeskyně jsou označené novým bootstrap formátem `UIE_MAP_VIEW2`; staré povrchové soubory `UIE_MAP_VIEW1` zůstávají podporované. Původní konfigurace `UIEMAP_CONFIG1` se nemění. Blokové kolize ani automatická údržba cave dat tím nejsou doplněné.
 
 Ověřeno skutečným prohlížečem na DIM42: povrch → jeskyně → povrch, přímý odkaz s řezem, načtení geometrie i uzávěrů z indexu 161 párů; 8 okolních párů načteno. Výchozí povrch nenačítal cave payloady. Nejde o nově nasazené jeskyně DIM42 ve veřejné ukázce.
+
+
+## Kolize a omezený úklid jeskyní (27.10.2026)
+
+Jednorázový export blokových kolizí pro již publikovaný povrch:
+
+```sh
+python uiemap.py collisions config.json --dimension 42
+python uiemap.py collisions config.json --dimension 42 --apply
+python uiemap.py serve config.json --main-dimension 42 --collisions --apply
+```
+
+Bez `--apply` se vypíše plán. Export používá registry kořenového světa a regiony vybrané dimenze. Web s `--collisions` vyžaduje odpovídající export pro každou vybranou dimenzi; cizí nebo zastaralé párování odmítne. Lze kombinovat s `--cave-config caves.json`. Export a chůze byly ověřeny na DIM42; speciální modované kolizní tvary zůstávají přibližné. Automatické plánování kolizních aktualizací ještě není součástí tohoto příkazu.
+
+```sh
+python uiemap.py cave-gc caves.json --dimension 42
+python uiemap.py cave-gc caves.json --dimension 42 --apply --max-files 64 --max-bytes 16777216
+```
+
+Tento omezený úklid spravuje pouze doprovodné cave indexy, páry, uzávěry a aliasy. Neuklízí kořenovou geometrii; existující povrchové `gc` ji nenahrazuje. Bez `--apply` nemaže soubory (může vytvořit soubor zámku). Skutečné odstranění jednoho nepotřebného aliasu a následná integrita všech publikovaných párů byly ověřeny na oddělené kopii.
+
+Veřejná ukázka od 27.10. obsahuje i jeskyně DIM42 s aktualizací po 30 minutách. Nové konfigurované blokové kolize DIM42 jsou zatím ověřené v odděleném prostředí, nikoli připojené veřejně. Povrch DIM42 zatím nemá pravidelnou obnovu.

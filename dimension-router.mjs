@@ -33,6 +33,11 @@ export async function createDimensionRouter(file, mainHandler, createHandler) {
     } else if (item.caveGeometryStore !== undefined || item.cavePairStore !== undefined) {
       throw new Error('Surface-only view cannot attach cave stores');
     }
+    if (view.collisions === true) {
+      if(typeof item.collisionStore!=='string' || !path.isAbsolute(item.collisionStore))
+        throw new Error('Collision view requires its own store');
+      env.UIE_COLLISION_STORE=item.collisionStore;
+    } else if(item.collisionStore!==undefined) throw new Error('Collision store requires explicit capability');
     const handler = await createHandler(env);
     children.set(item.key, { handler, title: view.title, world: view.world, dimension: view.dimension });
   }

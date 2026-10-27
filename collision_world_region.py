@@ -63,7 +63,7 @@ def stage_region(jx, jz, *, out, world, hires_store, tools, tiles=None,
         if used + metadata + scratch + 72*MIB > budget_bytes:
             raise ValueError('store budget exhausted during region')
         pair = stage.stage_pair(out/'store', hires_store, volume, mesh,
-                                min_free_bytes=min_free_bytes, disk_free=disk_free)
+                                min_free_bytes=min_free_bytes, disk_free=disk_free, read_index=tools.read_index)
         # Conservative even when the objects already existed; resets on next region.
         used += pair['geometryBytes'] + pair['blockGzipBytes'] + cb.MAX_PAIR_BYTES
         return pair

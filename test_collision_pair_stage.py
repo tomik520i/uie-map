@@ -57,6 +57,15 @@ class PairStageTests(unittest.TestCase):
         self.assertFalse(list(self.store.glob('pairs/*.json')))
         self.assertFalse((self.store/'current.json').exists())
 
+    def test_selected_dimension_reader_is_used_before_and_after_staging(self):
+        self.read.side_effect=AssertionError('Must not fall back to main dimension')
+        calls=[]
+        def selected(path):
+            calls.append(path)
+            return self.visible
+        self.call(read_index=selected)
+        self.assertEqual(calls,[self.hires,self.hires]);self.read.assert_not_called()
+
     def test_corrupt_existing_object_never_overwritten(self):
         pair = self.call()
         block = self.store/'objects'/(pair['blocksSha256']+'.uib'); block.write_bytes(b'bad')

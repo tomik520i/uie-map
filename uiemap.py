@@ -12,6 +12,8 @@ import uiemap_update
 import uiemap_schedule
 import uiemap_gc
 import uiemap_services
+import uiemap_cave_gc
+import uiemap_collisions
 
 
 def main(argv=None):
@@ -37,6 +39,10 @@ def main(argv=None):
     gc.add_argument('config',type=Path);gc.add_argument('--dimension',required=True)
     gc.add_argument('--apply',action='store_true');gc.add_argument('--max-files',type=int,default=128)
     gc.add_argument('--max-bytes',type=int,default=64*1024*1024)
+    cave_gc=commands.add_parser('cave-gc',help='Collect only old cave companion data; root geometry is excluded')
+    cave_gc.add_argument('config',type=Path);cave_gc.add_argument('--dimension',required=True)
+    cave_gc.add_argument('--apply',action='store_true');cave_gc.add_argument('--max-files',type=int,default=64)
+    cave_gc.add_argument('--max-bytes',type=int,default=16*1024*1024)
     doctor=commands.add_parser('doctor',help='Report missing prerequisites without rendering or starting services')
     doctor.add_argument('config',type=Path)
     catalog=commands.add_parser('catalog',help='Prepare a new catalog from an existing asset export')
@@ -45,9 +51,13 @@ def main(argv=None):
     render=commands.add_parser('render',help='Plan or run one configured surface/cave dimension (Linux systemd)')
     render.add_argument('config',type=Path);render.add_argument('--dimension',required=True)
     render.add_argument('--apply',action='store_true',help='Actually run render and publication')
+    collisions=commands.add_parser('collisions',help='Export block collisions for one configured surface dimension')
+    collisions.add_argument('config',type=Path);collisions.add_argument('--dimension',required=True)
+    collisions.add_argument('--apply',action='store_true')
     serve=commands.add_parser('serve',help='Plan or start the web viewer for published surface stores')
     serve.add_argument('config',type=Path);serve.add_argument('--main-dimension',required=True)
     serve.add_argument('--cave-config',type=Path)
+    serve.add_argument('--collisions',action='store_true')
     serve.add_argument('--apply',action='store_true',help='Write web configuration and start Node in foreground')
     args=parser.parse_args(argv)
     if args.command=='check':return uiemap_config.main([str(args.config)])
@@ -55,14 +65,18 @@ def main(argv=None):
     if args.command=='services':return uiemap_services.main([str(args.config)])
     if args.command=='gc':return uiemap_gc.main([str(args.config),'--dimension',args.dimension,
         '--max-files',str(args.max_files),'--max-bytes',str(args.max_bytes)]+(['--apply'] if args.apply else []))
+    if args.command=='cave-gc':return uiemap_cave_gc.main([str(args.config),'--dimension',args.dimension,
+        '--max-files',str(args.max_files),'--max-bytes',str(args.max_bytes)]+(['--apply'] if args.apply else []))
     if args.command=='update':return uiemap_update.main([str(args.config)]+(['--apply'] if args.apply else [])+(['--gc'] if args.gc else []))
     if args.command=='schedule':return uiemap_schedule.main([str(args.config),'--interval',str(args.interval)]+(['--apply'] if args.apply else [])+(['--gc'] if args.gc else []))
     if args.command=='doctor':return uiemap_doctor.main([str(args.config)])
     if args.command=='catalog':return catalog_package.main(['--source',str(args.source),'--out',str(args.out)]+(['--apply'] if args.apply else []))
     if args.command=='render':
         return uiemap_render.main([str(args.config),'--dimension',args.dimension]+(['--apply'] if args.apply else []))
+    if args.command=='collisions':
+        return uiemap_collisions.main([str(args.config),'--dimension',args.dimension]+(['--apply'] if args.apply else []))
     return uiemap_serve.main([str(args.config),'--main-dimension',args.main_dimension]+(['--apply'] if args.apply else [])
-        +(['--cave-config',str(args.cave_config)] if args.cave_config else []))
+        +(['--cave-config',str(args.cave_config)] if args.cave_config else [])+(['--collisions'] if args.collisions else []))
 
 
 if __name__=='__main__':raise SystemExit(main())

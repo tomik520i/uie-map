@@ -1,3 +1,5 @@
+> Aktualizace 27.10.2026: DIM42 povrch **NASAZEN**, jeskyně **NASAZENÉ** včetně 30min aktualizací. Konfigurovaný export kolizí a web **OVĚŘENÉ SOUKROMĚ**; veřejné kolize DIM42 a pravidelná obnova jejího povrchu **ČEKÁ**. Konfigurovaný omezený cave companion GC je **OVĚŘENÝ SOUKROMĚ**. Tento stav nahrazuje starší poznámky níže o čekajících jeskyních.
+
 # Směr projektu a stav vývoje
 
 **Cíl: stáhnout program, nastavit vlastní svět Minecraft 1.7.10 a modpack, vybrat dimenze a nechat automaticky vytvářet webovou mapu.** UIE je první ověřovací svět, nikoli konečný rozsah produktu. Stav k 27. 10. 2026; níže uvedené plánované funkce zatím nejsou příslibem dostupné instalace.

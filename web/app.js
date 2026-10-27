@@ -2697,7 +2697,8 @@ function startStandaloneView(view) {
   for (const id of ['opt-overview', 'opt-players']) $(id).disabled = true;
   if (!WORLD_CAVES) for (const id of ['opt-cut','cut-level','opt-cut-cap']) $(id).disabled=true;
   const note = document.createElement('p'); note.className = 'note';
-  note.textContent = `Dimenze ${view.dimension}. ${WORLD_CAVES?'Jeskyně jsou připojené; zapni výškový řez.':'Jeskyně nejsou připojené.'} Hráči a bloková data chůze zde zatím nejsou připojené; chůze používá přibližnou geometrii.`;
+  note.textContent = `Dimenze ${view.dimension}. ${WORLD_CAVES?'Jeskyně jsou připojené; zapni výškový řez.':'Jeskyně nejsou připojené.'} `
+    +(view.collisions?'Bloková data chůze jsou připojená; tvary některých modů zůstávají přibližné.':'Bloková data chůze nejsou připojená; chůze používá přibližnou geometrii.')+' Polohy hráčů nejsou připojené.';
   $('bounds').closest('section').append(note);
   const cutHelp=$('opt-cut-cap').closest('label').nextElementSibling;
   if(cutHelp) cutHelp.textContent=WORLD_CAVES
@@ -2707,6 +2708,7 @@ function startStandaloneView(view) {
   enableNavigation();
   startFlyMode();
   if (WORLD_CAVES) configureCut();
+  if (view.collisions) startCollisionPilot();
   applyDisplayOptions();
   setStatus('loading', 'Načítám povrch dimenze…');
   startHires();

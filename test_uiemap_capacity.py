@@ -1,5 +1,6 @@
 import hashlib,json,tempfile,unittest,os
 from unittest.mock import patch
+from types import SimpleNamespace
 from pathlib import Path
 import uiemap_capacity as capacity
 import hires_bundle as hb
@@ -58,5 +59,13 @@ class CapacityTests(unittest.TestCase):
         config=capacity.uiemap_config.load(self.config)
         with patch.object(Path,'lstat',side_effect=PermissionError('denied')):
             with self.assertRaises(PermissionError):capacity.output_usage(config)
+    def test_path_ctime_semantics_do_not_hide_actual_handle_changes(self):
+        p=self.region([(0,2,1)]);s=p.stat()
+        fields={name:getattr(s,name) for name in ['st_dev','st_ino','st_size','st_mode','st_mtime_ns','st_ctime_ns']}
+        named=SimpleNamespace(**dict(fields,st_ctime_ns=s.st_ctime_ns-100))
+        with patch.object(Path,'lstat',return_value=named):self.assertEqual(capacity.region_header(p)[0],[0])
+        changed=SimpleNamespace(**dict(fields,st_ctime_ns=s.st_ctime_ns+100))
+        with patch.object(capacity.os,'fstat',side_effect=[s,changed]):
+            with self.assertRaisesRegex(ValueError,'changed'):capacity.region_header(p)
 
 if __name__=='__main__':unittest.main()

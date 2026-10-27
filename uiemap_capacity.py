@@ -19,7 +19,9 @@ def region_header(path):
         header=os.read(fd,8192)
         after=os.fstat(fd);named=path.lstat()
         identity=lambda s:(s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns,s.st_ctime_ns)
-        if len(header)!=8192 or identity(before)!=identity(after) or identity(after)!=identity(named):
+        # Compare ctime between handle observations only: Windows handle/path
+        # stat can expose different ctime semantics for an unchanged file.
+        if len(header)!=8192 or identity(before)!=identity(after) or identity(after)[:4]!=identity(named)[:4]:
             raise ValueError('Region changed during inventory: '+str(path))
         chunks=[];ranges=[]
         for i in range(1024):
@@ -86,7 +88,7 @@ def output_usage(config,*,max_entries=500000):
                 entries+=len(dirs)+len(names)
                 if entries>max_entries:raise ValueError('Output inventory entry budget exceeded')
                 for name in dirs:
-                    if not stat.S_ISDIR((Path(base)/name).lstat().st_mode):raise ValueError('Linked output directory')
+                    layout.plain_directory(Path(base)/name)
                 for name in names:
                     info=(Path(base)/name).lstat()
                     if not stat.S_ISREG(info.st_mode):raise ValueError('Nonregular file in output inventory')

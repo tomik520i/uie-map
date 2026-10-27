@@ -103,6 +103,8 @@ class UpdateTests(unittest.TestCase):
                 out=out,store=str(Path(out)/'store'),result=dict(state='complete'))),'')
         self.assertTrue(update.execute(work,run,collisions=True)['complete'])
         self.assertEqual(seen,[('0',False),('0',True),('42',False),('42',True)])
+        # A successful export without an explicit maintenance receipt is insufficient.
+        self.assertFalse(update.execute(work,run,collisions=True,collision_gc=True)['complete'])
         def bad(command,**kwargs):
             if command[2].endswith('uiemap_collisions.py'):return subprocess.CompletedProcess([],0,'{}','')
             return self.reply(work['jobs'][0])

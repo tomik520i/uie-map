@@ -43,6 +43,11 @@ class ScheduleTests(unittest.TestCase):
         self.doc['dimensions'][0]['mode']='caves';self.save()
         with self.assertRaisesRegex(ValueError,'surface'):schedule.plan(self.file,collisions=True)
 
+    def test_collision_cleanup_requires_export_and_is_explicit(self):
+        with self.assertRaisesRegex(ValueError,'requires'):schedule.plan(self.file,collision_gc=True)
+        plan=schedule.plan(self.file,collisions=True,collision_gc=True)
+        self.assertIn('"--collision-gc"',plan['files'][plan['name']+'.service'])
+
     def test_cave_schedule_refuses_surface_gc_option(self):
         self.doc['dimensions'][0]['mode']='caves';self.save()
         self.assertTrue(schedule.plan(self.file)['readOnly'])

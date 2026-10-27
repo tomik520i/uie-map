@@ -25,7 +25,8 @@ def plan(path):
                 world=config['world']['id'],jobs=jobs,readOnly=True,concurrency=1,webChanged=False)
 
 
-def execute(work,runner=None,*,cleanup=False,collisions=False):
+def execute(work,runner=None,*,cleanup=False,collisions=False,collision_gc=False):
+    if collision_gc and not collisions:raise ValueError('Collision GC requires collision updates')
     if collisions and any(job.get('mode','surface')!='surface' for job in work['jobs']):
         raise ValueError('Collision updates require surface stores only; no update started')
     if cleanup and any(job.get('mode','surface')!='surface' for job in work['jobs']):
@@ -63,6 +64,7 @@ def execute(work,runner=None,*,cleanup=False,collisions=False):
             command=[sys.executable,'-B',str(Path(__file__).with_name('uiemap_collisions.py')),
                      work['config'],'--dimension',job['dimension'],'--apply',
                      '--expected-config-sha',work['configSha256']]
+            if collision_gc:command.append('--gc')
             collision=runner(command,capture_output=True,text=True)
             receipt=None
             for line in collision.stdout.splitlines():
@@ -77,6 +79,10 @@ def execute(work,runner=None,*,cleanup=False,collisions=False):
                    and receipt.get('dimension')==job['dimension'] and receipt.get('out')==out
                    and receipt.get('store')==str(Path(out)/'store')
                    and isinstance(receipt.get('result'),dict) and receipt['result'].get('state')=='complete')
+            if valid and collision_gc:
+                maintenance=receipt.get('maintenance')
+                valid=(isinstance(maintenance,dict) and isinstance(maintenance.get('collection'),dict)
+                       and maintenance['collection'].get('state')=='done' and maintenance['collection'].get('dryRun') is False)
             completed[-1]['collisions']=receipt if valid else None
             if not valid:
                 return dict(format='UIEMAP_UPDATE_RESULT1',complete=False,results=completed,
@@ -98,14 +104,17 @@ def main(argv=None):
     parser.add_argument('--apply',action='store_true')
     parser.add_argument('--gc',action='store_true',help='After publication collect one bounded batch per dimension')
     parser.add_argument('--collisions',action='store_true',help='Export matching block data after each surface publication')
+    parser.add_argument('--collision-gc',action='store_true',help='Enable bounded protected collision maintenance')
     args=parser.parse_args(argv)
     try:
         work=plan(args.config)
+        if args.collision_gc and not args.collisions:raise ValueError('Collision GC requires --collisions')
         work['collectAfterPublication']=args.gc
         if args.collisions and any(job.get('mode','surface')!='surface' for job in work['jobs']):
             raise ValueError('Collision updates require surface stores only')
         work['collisionsAfterPublication']=args.collisions
-        result=execute(work,cleanup=args.gc,collisions=args.collisions) if args.apply else work
+        work['collisionMaintenance']=args.collision_gc
+        result=execute(work,cleanup=args.gc,collisions=args.collisions,collision_gc=args.collision_gc) if args.apply else work
     except (OSError,ValueError) as error:parser.exit(2,str(error)+'\n')
     print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0 if result.get('readOnly') or result.get('complete') else 2

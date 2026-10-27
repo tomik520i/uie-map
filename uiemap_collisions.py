@@ -72,26 +72,34 @@ def run_worker(work):
     try:
         binding.ensure(out,work['binding'])
         result=runner.run_pass(out=out,world=Path(work['regionWorld']),hires_store=Path(work['surface']),
-            tools=make_tools(work),min_free_bytes=work['limits']['minFreeGiB']*1024**3)
+            tools=make_tools(work),min_free_bytes=work['limits']['minFreeGiB']*1024**3,
+            allow_world_gc=bool(work.get('collectAfterPublication') and runner.cb._gc_enabled(out/'store')))
         if result['state']!='complete':raise ValueError('Collision export incomplete: '+json.dumps(result))
-        return dict(format='UIEMAP_COLLISION_RESULT1',world=work['world'],dimension=work['dimension'],
+        receipt=dict(format='UIEMAP_COLLISION_RESULT1',world=work['world'],dimension=work['dimension'],
             out=str(out),store=str(out/'store'),result=result,webChanged=False)
     finally:stopping.set();lock.close()
+    if work.get('collectAfterPublication'):
+        import uiemap_collision_gc
+        receipt['maintenance']=uiemap_collision_gc.collect(work)
+    return receipt
 
 
 def service_command(work,unit):
     args=uiemap_render.service_command(work,unit)
     args[args.index(str(Path(uiemap_render.__file__).resolve()))]=str(Path(__file__).resolve())
+    if work.get('collectAfterPublication'):args.append('--gc')
     return args
 
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('config',type=Path)
     parser.add_argument('--dimension',required=True);parser.add_argument('--apply',action='store_true')
+    parser.add_argument('--gc',action='store_true',help='Enable protected bounded maintenance after successful export')
     parser.add_argument('--worker-config-sha',help=argparse.SUPPRESS)
     parser.add_argument('--expected-config-sha',help=argparse.SUPPRESS);args=parser.parse_args(argv)
     try:
         work=plan(args.config,args.dimension)
+        work['collectAfterPublication']=args.gc
         if args.expected_config_sha and args.expected_config_sha!=work['configSha256']:
             raise ValueError('Configuration changed after update planning')
         if args.worker_config_sha:

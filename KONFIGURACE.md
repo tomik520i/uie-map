@@ -254,3 +254,18 @@ python uiemap.py schedule config.json --collisions --interval 1800 --apply
 Volba vyžaduje povrchové dimenze. Každou zpracuje sekvenčně: publikování povrchu, odpovídající kolize, případný opt-in povrchový úklid. Nestačí nulový návratový kód; oba kroky musí potvrdit správný svět, dimenzi a cílové uložiště. Chyba kolizí zastaví další dimenze a zachová potvrzení úspěšného povrchu. Nejde o atomické přepnutí obou dat: během přepočtu klient používá jen kolize odpovídající načtené geometrii, jinak jeho běžný náhradní režim. Jeskynní aktualizace mají vlastní konfiguraci a časovač. Existující odlišnou systemd jednotku příkaz nepřepisuje.
 
 Na veřejné DIM42 ověřen první automatický průchod za přibližně9s při nezměněných10oblastech. Toto není odhad přepočtu změněného světa. Interval se počítá od dokončení; user systemd musí zůstat dostupný i po odhlášení.
+
+
+### Omezená kolizní retence (opt-in)
+
+```sh
+python uiemap.py collisions config.json --dimension 42 --gc --apply
+python uiemap.py update config.json --collisions --collision-gc --apply
+python uiemap.py schedule config.json --collisions --collision-gc --interval 1800 --apply
+```
+
+Po úspěšném exportu se ověří vlastnictví výstupu, inicializuje evidence chráněných generací a provede nejvýše jeden omezený úklid:64souborů/16MiB, nejvýše50ověřovacích kroků a120s mezi kroky. Aktuální generace, její data a ochranné lhůty zůstávají chráněné. Nenulová chyba úklidu znamená neúspěšnou aktualizaci; publikovaná data se tím nevracejí zpět.
+
+Po zapnutí profilu pokračujte s tímto přepínačem: starý exporter bez podpory údržby takové uložiště úmyslně odmítá. Existující odlišnou systemd jednotku příkaz nepřepisuje. Povrchové `--gc` je samostatná funkce. Tento režim nemaže svět, katalog ani klientské prostředky.
+
+Na DIM42 ověřena inicializace, opakovaný export s aktivním profilem i produkční společný běh. První průchod nesmazal žádné soubory, protože nebyly způsobilé; všech161publikovaných párů následně nezávisle prošlo kontrolou. Automatická retence DIM42 je nasazená, nikoli tím automaticky retence všech ostatních dimenzí.

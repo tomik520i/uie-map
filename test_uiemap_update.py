@@ -90,5 +90,30 @@ class UpdateTests(unittest.TestCase):
         self.assertFalse(result['complete']);self.assertTrue(result['results'][0]['published'])
         self.assertEqual(result['pending'],['42'])
 
+    def test_collision_updates_follow_surface_and_stop_on_bad_receipt(self):
+        work=self.work();seen=[]
+        def run(command,**kwargs):
+            key=command[command.index('--dimension')+1];job=next(j for j in work['jobs'] if j['dimension']==key)
+            is_collision=command[2].endswith('uiemap_collisions.py');seen.append((key,is_collision))
+            self.assertIn(work['configSha256'],command)
+            if not is_collision:return self.reply(job)
+            row=next(r for r in update.uiemap_config.load(self.file)['dimensions'] if r['key']==key)
+            out=row['outputs']['collisions']
+            return subprocess.CompletedProcess([],0,json.dumps(dict(format='UIEMAP_COLLISION_RESULT1',world='mine',dimension=key,
+                out=out,store=str(Path(out)/'store'),result=dict(state='complete'))),'')
+        self.assertTrue(update.execute(work,run,collisions=True)['complete'])
+        self.assertEqual(seen,[('0',False),('0',True),('42',False),('42',True)])
+        def bad(command,**kwargs):
+            if command[2].endswith('uiemap_collisions.py'):return subprocess.CompletedProcess([],0,'{}','')
+            return self.reply(work['jobs'][0])
+        result=update.execute(work,bad,collisions=True)
+        self.assertFalse(result['complete']);self.assertTrue(result['results'][0]['published']);self.assertEqual(result['pending'],['42'])
+
+    def test_caves_reject_collision_update_before_render(self):
+        work=self.work();work['jobs'][0]['mode']='caves'
+        with patch.object(update.subprocess,'run') as run,self.assertRaisesRegex(ValueError,'surface'):
+            update.execute(work,collisions=True)
+        run.assert_not_called()
+
 
 if __name__=='__main__':unittest.main()

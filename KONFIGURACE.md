@@ -231,7 +231,7 @@ python uiemap.py collisions config.json --dimension 42 --apply
 python uiemap.py serve config.json --main-dimension 42 --collisions --apply
 ```
 
-Bez `--apply` se vypíše plán. Export používá registry kořenového světa a regiony vybrané dimenze. Web s `--collisions` vyžaduje odpovídající export pro každou vybranou dimenzi; cizí nebo zastaralé párování odmítne. Lze kombinovat s `--cave-config caves.json`. Export a chůze byly ověřeny na DIM42; speciální modované kolizní tvary zůstávají přibližné. Automatické plánování kolizních aktualizací ještě není součástí tohoto příkazu.
+Bez `--apply` se vypíše plán. Export používá registry kořenového světa a regiony vybrané dimenze. Web s `--collisions` vyžaduje odpovídající export pro každou vybranou dimenzi; cizí nebo zastaralé párování odmítne. Lze kombinovat s `--cave-config caves.json`. Export a chůze byly ověřeny na DIM42; speciální modované kolizní tvary zůstávají přibližné. Samotný příkaz `collisions` je jednorázový; pravidelný provoz zapíná `schedule --collisions` níže.
 
 ```sh
 python uiemap.py cave-gc caves.json --dimension 42
@@ -240,4 +240,17 @@ python uiemap.py cave-gc caves.json --dimension 42 --apply --max-files 64 --max-
 
 Tento omezený úklid spravuje pouze doprovodné cave indexy, páry, uzávěry a aliasy. Neuklízí kořenovou geometrii; existující povrchové `gc` ji nenahrazuje. Bez `--apply` nemaže soubory (může vytvořit soubor zámku). Skutečné odstranění jednoho nepotřebného aliasu a následná integrita všech publikovaných párů byly ověřeny na oddělené kopii.
 
-Veřejná ukázka od 27.10. obsahuje i jeskyně DIM42 s aktualizací po 30 minutách. Nové konfigurované blokové kolize DIM42 jsou zatím ověřené v odděleném prostředí, nikoli připojené veřejně. Povrch DIM42 zatím nemá pravidelnou obnovu.
+Veřejná ukázka od 27.10. obsahuje i jeskyně DIM42 s aktualizací po 30 minutách. Blokové kolize DIM42 jsou veřejné a povrch s kolizemi má samostatnou30min pravidelnou obnovu; první skutečný běh časovače prošel.
+
+
+### Společné aktualizace povrchu a kolizí
+
+```sh
+python uiemap.py update config.json --collisions
+python uiemap.py update config.json --collisions --apply
+python uiemap.py schedule config.json --collisions --interval 1800 --apply
+```
+
+Volba vyžaduje povrchové dimenze. Každou zpracuje sekvenčně: publikování povrchu, odpovídající kolize, případný opt-in povrchový úklid. Nestačí nulový návratový kód; oba kroky musí potvrdit správný svět, dimenzi a cílové uložiště. Chyba kolizí zastaví další dimenze a zachová potvrzení úspěšného povrchu. Nejde o atomické přepnutí obou dat: během přepočtu klient používá jen kolize odpovídající načtené geometrii, jinak jeho běžný náhradní režim. Jeskynní aktualizace mají vlastní konfiguraci a časovač. Existující odlišnou systemd jednotku příkaz nepřepisuje.
+
+Na veřejné DIM42 ověřen první automatický průchod za přibližně9s při nezměněných10oblastech. Toto není odhad přepočtu změněného světa. Interval se počítá od dokončení; user systemd musí zůstat dostupný i po odhlášení.

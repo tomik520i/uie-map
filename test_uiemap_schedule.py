@@ -36,6 +36,13 @@ class ScheduleTests(unittest.TestCase):
         self.assertNotIn('--gc',plain['files'][plain['name']+'.service'])
         self.assertIn('"--gc"',cleanup['files'][cleanup['name']+'.service'])
 
+    def test_collision_schedule_is_explicit_and_surface_only(self):
+        plain=schedule.plan(self.file);paired=schedule.plan(self.file,collisions=True)
+        self.assertNotIn('--collisions',plain['files'][plain['name']+'.service'])
+        self.assertIn('"--collisions"',paired['files'][paired['name']+'.service'])
+        self.doc['dimensions'][0]['mode']='caves';self.save()
+        with self.assertRaisesRegex(ValueError,'surface'):schedule.plan(self.file,collisions=True)
+
     def test_cave_schedule_refuses_surface_gc_option(self):
         self.doc['dimensions'][0]['mode']='caves';self.save()
         self.assertTrue(schedule.plan(self.file)['readOnly'])

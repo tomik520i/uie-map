@@ -25,7 +25,9 @@ def plan(path):
                 world=config['world']['id'],jobs=jobs,readOnly=True,concurrency=1,webChanged=False)
 
 
-def execute(work,runner=None,*,cleanup=False):
+def execute(work,runner=None,*,cleanup=False,collisions=False):
+    if collisions and any(job.get('mode','surface')!='surface' for job in work['jobs']):
+        raise ValueError('Collision updates require surface stores only; no update started')
     if cleanup and any(job.get('mode','surface')!='surface' for job in work['jobs']):
         raise ValueError('Automatic GC currently supports surface stores only; no update started')
     runner=subprocess.run if runner is None else runner
@@ -55,6 +57,31 @@ def execute(work,runner=None,*,cleanup=False):
             return dict(format='UIEMAP_UPDATE_RESULT1',complete=False,results=completed,
                         pending=[j['dimension'] for j in work['jobs'][index+1:]],
                         error=run.stderr[-2000:] or 'Renderer did not confirm publication',webChanged=False)
+        if collisions:
+            if digest(work['config'])!=work['configSha256']:
+                raise ValueError('Configuration changed before collision export')
+            command=[sys.executable,'-B',str(Path(__file__).with_name('uiemap_collisions.py')),
+                     work['config'],'--dimension',job['dimension'],'--apply',
+                     '--expected-config-sha',work['configSha256']]
+            collision=runner(command,capture_output=True,text=True)
+            receipt=None
+            for line in collision.stdout.splitlines():
+                try:value=json.loads(line)
+                except ValueError:continue
+                if isinstance(value,dict) and value.get('format')=='UIEMAP_COLLISION_RESULT1':receipt=value
+            expected=uiemap_config.load(work['config'])
+            if digest(work['config'])!=work['configSha256']:
+                raise ValueError('Configuration changed during collision export')
+            out=next(row['outputs']['collisions'] for row in expected['dimensions'] if row['key']==job['dimension'])
+            valid=(collision.returncode==0 and isinstance(receipt,dict) and receipt.get('world')==work['world']
+                   and receipt.get('dimension')==job['dimension'] and receipt.get('out')==out
+                   and receipt.get('store')==str(Path(out)/'store')
+                   and isinstance(receipt.get('result'),dict) and receipt['result'].get('state')=='complete')
+            completed[-1]['collisions']=receipt if valid else None
+            if not valid:
+                return dict(format='UIEMAP_UPDATE_RESULT1',complete=False,results=completed,
+                    pending=[j['dimension'] for j in work['jobs'][index+1:]],
+                    error='Surface published but collision export failed: '+(collision.stderr[-2000:] or 'Missing valid receipt'),webChanged=False)
         if cleanup:
             try:
                 completed[-1]['collection']=uiemap_gc.collect(work['config'],job['dimension'],apply=True,
@@ -70,11 +97,15 @@ def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('config',type=Path)
     parser.add_argument('--apply',action='store_true')
     parser.add_argument('--gc',action='store_true',help='After publication collect one bounded batch per dimension')
+    parser.add_argument('--collisions',action='store_true',help='Export matching block data after each surface publication')
     args=parser.parse_args(argv)
     try:
         work=plan(args.config)
         work['collectAfterPublication']=args.gc
-        result=execute(work,cleanup=args.gc) if args.apply else work
+        if args.collisions and any(job.get('mode','surface')!='surface' for job in work['jobs']):
+            raise ValueError('Collision updates require surface stores only')
+        work['collisionsAfterPublication']=args.collisions
+        result=execute(work,cleanup=args.gc,collisions=args.collisions) if args.apply else work
     except (OSError,ValueError) as error:parser.exit(2,str(error)+'\n')
     print(json.dumps(result,ensure_ascii=False,indent=2))
     return 0 if result.get('readOnly') or result.get('complete') else 2

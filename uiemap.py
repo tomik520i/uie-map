@@ -31,10 +31,12 @@ def main(argv=None):
     update=commands.add_parser('update',help='Plan or run one sequential update pass of configured dimensions')
     update.add_argument('config',type=Path);update.add_argument('--apply',action='store_true')
     update.add_argument('--gc',action='store_true')
+    update.add_argument('--collisions',action='store_true')
     schedule=commands.add_parser('schedule',help='Plan or install a user-systemd update timer')
     schedule.add_argument('config',type=Path);schedule.add_argument('--interval',type=int,default=900)
     schedule.add_argument('--apply',action='store_true')
     schedule.add_argument('--gc',action='store_true')
+    schedule.add_argument('--collisions',action='store_true')
     gc=commands.add_parser('gc',help='Preview or collect one bounded batch of unused surface objects')
     gc.add_argument('config',type=Path);gc.add_argument('--dimension',required=True)
     gc.add_argument('--apply',action='store_true');gc.add_argument('--max-files',type=int,default=128)
@@ -67,8 +69,8 @@ def main(argv=None):
         '--max-files',str(args.max_files),'--max-bytes',str(args.max_bytes)]+(['--apply'] if args.apply else []))
     if args.command=='cave-gc':return uiemap_cave_gc.main([str(args.config),'--dimension',args.dimension,
         '--max-files',str(args.max_files),'--max-bytes',str(args.max_bytes)]+(['--apply'] if args.apply else []))
-    if args.command=='update':return uiemap_update.main([str(args.config)]+(['--apply'] if args.apply else [])+(['--gc'] if args.gc else []))
-    if args.command=='schedule':return uiemap_schedule.main([str(args.config),'--interval',str(args.interval)]+(['--apply'] if args.apply else [])+(['--gc'] if args.gc else []))
+    if args.command=='update':return uiemap_update.main([str(args.config)]+(['--apply'] if args.apply else [])+(['--gc'] if args.gc else [])+(['--collisions'] if args.collisions else []))
+    if args.command=='schedule':return uiemap_schedule.main([str(args.config),'--interval',str(args.interval)]+(['--apply'] if args.apply else [])+(['--gc'] if args.gc else [])+(['--collisions'] if args.collisions else []))
     if args.command=='doctor':return uiemap_doctor.main([str(args.config)])
     if args.command=='catalog':return catalog_package.main(['--source',str(args.source),'--out',str(args.out)]+(['--apply'] if args.apply else []))
     if args.command=='render':

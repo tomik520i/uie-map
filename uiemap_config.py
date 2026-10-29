@@ -54,7 +54,7 @@ def validate(doc,*,base):
     if not isinstance(selected,list) or not 1<=len(selected)<=1024:raise ConfigError('Select 1..1024 dimensions explicitly')
     mappings=[];rows=[];seen=set()
     for item in selected:
-        fields(item,{'key','title','mode'},{'path'})
+        fields(item,{'key','title','mode'},{'path','catalog'})
         key=text(item['key'],'dimension key',128)
         if key in seen:raise ConfigError('Duplicate dimension key: '+key)
         seen.add(key)
@@ -66,7 +66,12 @@ def validate(doc,*,base):
         title=text(item['title'],'dimension title',120)
         mode=item['mode']
         if mode not in ('surface','caves'):raise ConfigError('Mode must be surface or caves; ceiling mode is not implemented')
-        rows.append(dict(key=key,title=title,mode=mode))
+        selected_catalog=path(item['catalog']) if 'catalog' in item else catalog
+        layout.plain_directory(selected_catalog)
+        selected_catalog=selected_catalog.resolve()
+        if out==selected_catalog or out.is_relative_to(selected_catalog) or selected_catalog.is_relative_to(out):
+            raise ConfigError('Output must be separate from every dimension catalog (including ancestors)')
+        rows.append(dict(key=key,title=title,mode=mode,catalog=str(selected_catalog)))
     inventory=layout.discover(world,mappings)
     by_key={x['key']:x for x in inventory['dimensions']}
     limits=doc.get('limits',{});fields(limits,set(),{'workers','memoryMiB','minFreeGiB'})

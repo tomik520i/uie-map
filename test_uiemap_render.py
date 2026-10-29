@@ -28,6 +28,14 @@ class RenderConfigTests(unittest.TestCase):
         self.assertEqual(cave['binding']['mode'],'caves')
         self.assertEqual(Path(cave['out']).name,'caves')
 
+    def test_selected_catalog_reaches_both_surface_and_cave_renderer(self):
+        (self.root/'crystals').mkdir()
+        self.doc['dimensions'][0]['catalog']='crystals'
+        for mode in ['surface','caves']:
+            self.doc['dimensions'][0]['mode']=mode;self.save()
+            command=render.plan(self.file,'42')['command']
+            self.assertEqual(command[command.index('--catalog-dir')+1],str(self.root/'crystals'))
+
     def test_cave_success_requires_both_publication_receipts(self):
         self.doc['dimensions'][0]['mode']='caves';self.save();work=render.plan(self.file,'42')
         result=dict(published=True,indexSha256='a'*64)

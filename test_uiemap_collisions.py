@@ -34,6 +34,15 @@ class CollisionConfigTests(unittest.TestCase):
         self.assertIn('--property=MemoryMax=2048M',cmd)
         self.assertIn(work['configSha256'],cmd)
 
+    def test_collision_plan_uses_same_dimension_catalog_as_surface(self):
+        (self.root/'crystals').mkdir()
+        doc=json.loads(self.file.read_text())
+        for row in doc['dimensions']:
+            if row['key']=='42':row['catalog']='crystals'
+        self.file.write_text(json.dumps(doc))
+        self.assertEqual(collisions.plan(self.file,'42')['catalog'],str(self.root/'crystals'))
+        self.assertEqual(collisions.plan(self.file,'0')['catalog'],str(self.root/'catalog'))
+
     def test_dimension_toolkit_fresh_preserves_registry_and_index_identity(self):
         import collision_region_probe as probe
         import collision_export as export

@@ -36,7 +36,7 @@ def plan(config_path,dimension):
     if out.exists():binding.ensure(out,expected)
     return dict(format='UIEMAP_COLLISION_PLAN1',config=surface['config'],configSha256=surface['configSha256'],
         world=doc['world']['id'],dimension=dimension,mode='collisions',worldPath=doc['world']['path'],
-        regionWorld=str(Path(row['regionPath']).parent),catalog=doc['catalog'],surface=surface['out'],
+        regionWorld=str(Path(row['regionPath']).parent),catalog=row['catalog'],surface=surface['out'],
         out=str(out),binding=expected,limits=doc['limits'],publication=publication,readOnly=True,webChanged=False)
 
 

@@ -83,7 +83,7 @@ Vstupem serveru zůstává `node server.mjs`; tento soubor je kompatibilní i s 
 
 
 <!-- CURRENT EXPANSION START -->
-## Aktuální nasazení dalších dimenzí (27. 10.)
+## Aktuální nasazení dalších dimenzí (29. 10.)
 
 Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. DIM84 má dokončená data soukromě; před zveřejněním zbývá vyřešit vlastnosti krystalových bloků OreSpawn podle dimenze. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 
@@ -101,3 +101,6 @@ Před zveřejněním proběhlo nezávislé ověření geometrie, kolizních dat 
 Mapa vykresluje uložené chunky; negeneruje neprozkoumaný terén podle seedu. Proto mohou například DIM81 nebo DIM83 vypadat jako oddělené ostrůvky či sloupce, i když je celý uložený rozsah hotový. DIM82 obsahuje jediný uložený chunk. Jeskynní režim zpřístupňuje existující podzemní geometrii; u mělké ploché dimenze jako DIM83 nemusí řez nad povrchem vzhled vůbec změnit.
 
 <!-- CURRENT EXPANSION END -->
+
+
+Pro mod s vlastnostmi bloků závislými na dimenzi lze nově vybrat samostatný katalog, viz [konfigurace katalogů](KONFIGURACE.md#vlastní-katalog-pro-jednotlivou-dimenzi). Nejde o automatickou opravu všech modovaných bloků.

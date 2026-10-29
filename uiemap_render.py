@@ -35,7 +35,7 @@ def plan(config_path, dimension):
                                   dimension=dimension,dimension_path=row['path'],mode=mode)
     if out.exists():binding.ensure(out,expected)
     command=[sys.executable,'-B',str(Path(__file__).with_name('world_hires.py')),
-        '--world',doc['world']['path'],'--catalog-dir',doc['catalog'],'--out',str(out),
+        '--world',doc['world']['path'],'--catalog-dir',row['catalog'],'--out',str(out),
         '--world-id',doc['world']['id'],'--dimension-key',dimension,'--dimension-path',row['path'],
         '--workers',str(doc['limits']['workers']),'--prepare-immutable']
     if mode=='caves':command+=['--caves','--cave-caps']

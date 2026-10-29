@@ -1,6 +1,6 @@
 # Společná konfigurace a spuštění povrchového renderu
 
-**HOTOVO / OVĚŘENO:** nezapisující validace, oddělené výstupy, spuštění povrchového renderu a publisheru i sestavení webového katalogu a spuštění webu. **ČEKÁ:** kolize a jeskyně z této konfigurace, trvalá automatizace aktualizací a import katalogu z jiného modpacku. Příkaz `uiemap_config.py` níže nadále nic nespouští a nevytváří adresáře. Jeho výsledek proto výslovně obsahuje `renderReady: false`.
+**HOTOVO / OVĚŘENO:** validace, povrchový i jeskynní render, kolize, publikování, web, aktualizace, plánovač a omezený úklid. **ROZDĚLANÉ:** kompletní přenos do dalšího modpacku; import ze samotných JARů zatím není hotový. Validace sama nic nespouští a proto vrací `renderReady: false`.
 
 Příklad `uie-map.json` pro vlastní instalaci:
 
@@ -288,3 +288,23 @@ Ověřeno na oddělené DIM42 a nasazeno pro hlavní veřejný svět i DIM42. Pr
 ### Kapacita před renderem
 
 `python uiemap.py capacity mapa.json` provede inventář vybraných dimenzí bez zápisu. Volitelný `--sample-store` přidá odhad geometrie podle existující publikace stejného režimu. `--generations 2` modeluje dvě celé generace bez sdílení. Rozsah a omezení jsou v [KAPACITA.md](KAPACITA.md); nejde o celkovou potřebu disku ani příslib času renderu.
+
+
+## Vlastní katalog pro jednotlivou dimenzi
+
+Některé mody mění vzhled či vlastnosti bloků podle dimenze. Výchozí `catalog` zůstává společný, ale jednotlivá položka `dimensions` může uvést vlastní připravený katalog:
+
+```json
+{
+  "key": "42",
+  "title": "Dimenze se zvláštním katalogem",
+  "mode": "surface",
+  "catalog": "./catalogs/dimension-profile"
+}
+```
+
+Cesta se vyhodnocuje vůči konfiguračnímu souboru. Bez tohoto pole dimenze používá společný katalog. Výstup nesmí ležet uvnitř žádného katalogu ani katalog uvnitř výstupu. Výběr předává stejný katalog rendereru povrchu, jeskyní a exportu kolizí; `doctor` kontroluje i další vybrané katalogy.
+
+Tato možnost sama katalog nevytvoří ani neopraví pravidla modu. Připravte a ověřte samostatný katalog se správnou identitou; neupravujte sdílený produkční katalog za běhu. Ve zvlášť vedených konfiguracích povrchu a jeskyní zadejte odpovídající katalog v obou. Po změně nejprve přepočítejte geometrii a navazující kolize; pouhá změna konfigurace nepřepíše již publikovanou mapu. Nemění se klíč dimenze, registr bloků ani vazba na zdrojový svět.
+
+Ověření29.10.:61testů na Ubuntu; na Windows57prošlo a4POSIXkontroly přeskočeny. Plán nad skutečnými daty potvrdil oddělenou volbu katalogu pro jednu dimenzi a zachování výchozího katalogu druhé. Opravený katalog krystalové DIM84 tím ještě není dokončený ani nasazený.

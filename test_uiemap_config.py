@@ -62,5 +62,20 @@ class ConfigTests(unittest.TestCase):
         self.doc['catalog']='catalog';(self.base/'output').write_bytes(b'not a directory')
         with self.assertRaises(ValueError):self.check()
 
+    def test_dimension_catalog_is_explicit_relative_and_isolated(self):
+        original=self.check()['dimensions'][0]['outputs']
+        (self.base/'crystals').mkdir()
+        self.doc['dimensions'][1]['catalog']='crystals'
+        a,b=self.check()['dimensions']
+        self.assertEqual(a['catalog'],str(self.base/'catalog'))
+        self.assertEqual(b['catalog'],str(self.base/'crystals'))
+        self.assertEqual(a['outputs'],original)
+        for bad in ['missing','output','output/nested']:
+            self.doc['dimensions'][1]['catalog']=bad
+            (self.base/'output/nested').mkdir(parents=True,exist_ok=True)
+            with self.subTest(path=bad),self.assertRaises(ValueError):self.check()
+        self.doc['dimensions'][1]['catalog']='crystals';self.doc['out']='crystals/generated'
+        with self.assertRaises(ValueError):self.check()
+
 
 if __name__=='__main__':unittest.main()

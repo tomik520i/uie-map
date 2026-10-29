@@ -32,20 +32,24 @@ def inspect(path):
     except (OSError, ValueError) as error:
         return dict(format='UIEMAP_DOCTOR1', readOnly=True, prerequisitesReady=False,
                     checks=[dict(name='configuration', scope='shared', ok=False, detail=str(error))])
-    catalog = Path(config['catalog'])
-    def readable(name):
+    def readable(catalog, name):
         with (catalog/name).open('rb') as file:
             if not file.read(1):raise ValueError('Empty catalog file: '+name)
         return name
-    for name in ('catalog.json', 'atlas.png', 'atlas-layout.json', 'grass.png', 'foliage.png'):
-        check('file:'+name, lambda name=name: readable(name))
-    def compiled():
+    def compiled(catalog):
         from offline_catalog import Catalog
         if (catalog/'catalog.json').stat().st_size > 64*1024*1024:
             raise ValueError('Catalog exceeds doctor inspection limit (64 MiB)')
         loaded=Catalog.load_compiled(catalog/'catalog.json')
         return dict(identity=loaded.identity, sprites=len(loaded.sprites))
-    check('compiled-catalog', compiled)
+    catalogs={config['catalog']:''}
+    for row in config['dimensions']:
+        catalogs.setdefault(row['catalog'],'dimension:'+row['key']+':')
+    for directory,prefix in catalogs.items():
+        catalog=Path(directory)
+        for name in ('catalog.json', 'atlas.png', 'atlas-layout.json', 'grass.png', 'foliage.png'):
+            check(prefix+'file:'+name, lambda name=name,catalog=catalog: readable(catalog,name))
+        check(prefix+'compiled-catalog',lambda catalog=catalog: compiled(catalog))
     def registry():
         import reader
         source=Path(config['world']['path'])/'level.dat'

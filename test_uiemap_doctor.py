@@ -41,5 +41,16 @@ class DoctorTests(unittest.TestCase):
         with patch.object(doctor.subprocess,'run',return_value=subprocess.CompletedProcess([],1,'','')):
             with self.assertRaisesRegex(ValueError,'failed'):doctor.command(['systemctl','--user','show'])
 
+    def test_dimension_catalog_missing_files_are_not_hidden_by_default(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp)
+            for name in ['world/region','catalog','crystals']:(root/name).mkdir(parents=True)
+            file=root/'config.json';file.write_text(json.dumps(dict(format='UIEMAP_CONFIG1',world=dict(id='test',path='world'),catalog='catalog',out='out',dimensions=[dict(key='0',title='World',mode='surface',catalog='crystals')])))
+            result=doctor.inspect(file)
+            failures={c['name'] for c in result['checks'] if not c['ok']}
+            self.assertIn('dimension:0:file:atlas.png',failures)
+            self.assertIn('dimension:0:compiled-catalog',failures)
+            self.assertFalse((root/'out').exists())
+
 
 if __name__=='__main__':unittest.main()

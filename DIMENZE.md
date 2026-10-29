@@ -1,6 +1,6 @@
 # Dimenze — rozpoznání, render a webový přepínač
 
-**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. DIM84 má dokončená data soukromě; před zveřejněním zbývá vyřešit vlastnosti krystalových bloků OreSpawn podle dimenze. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
+**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 
 ```sh
 python world_layout.py /cesta/k/vlastnimu/svetu
@@ -85,7 +85,7 @@ Vstupem serveru zůstává `node server.mjs`; tento soubor je kompatibilní i s 
 <!-- CURRENT EXPANSION START -->
 ## Aktuální nasazení dalších dimenzí (29. 10.)
 
-Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. DIM84 má dokončená data soukromě; před zveřejněním zbývá vyřešit vlastnosti krystalových bloků OreSpawn podle dimenze. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
+Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 
 | Dimenze | Veřejných dlaždic | Povrch / kolize / jeskyně |
 | --- | ---: | --- |
@@ -94,6 +94,7 @@ Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, 
 | 81 | 48 | **HOTOVO / NASAZENO** |
 | 82 | 1 | **HOTOVO / NASAZENO** |
 | 83 | 161 | **HOTOVO / NASAZENO** |
+| 84 | 161 | **HOTOVO / NASAZENO** |
 | 85 | 82 | **HOTOVO / NASAZENO** |
 
 Před zveřejněním proběhlo nezávislé ověření geometrie, kolizních dat a jeskynních párů. Prohlížeč ověřil přepnutí, úplné načtení potřebných řezů a návrat na hlavní mapu. Skupinové aktualizace zpracovávají dimenze postupně, takže počet nových dimenzí nezvyšuje počet současně spuštěných rendererů v každé frontě. Povrchová a jeskynní fronta ale mohou běžet souběžně; nejde o globální limit všech služeb na serveru. Staré samostatné časovače DIM80/82 byly vypnuté.
@@ -104,3 +105,7 @@ Mapa vykresluje uložené chunky; negeneruje neprozkoumaný terén podle seedu. 
 
 
 Pro mod s vlastnostmi bloků závislými na dimenzi lze nově vybrat samostatný katalog, viz [konfigurace katalogů](KONFIGURACE.md#vlastní-katalog-pro-jednotlivou-dimenzi). Nejde o automatickou opravu všech modovaných bloků.
+
+DIM84 používá od 29. 10. samostatný profil šesti krystalových bloků OreSpawn, jejichž vlastnost neprůhlednosti závisí na dimenzi. Povrch, kolize a jeskyně byly přepočítány společně a všech 161 dlaždic a párů nezávisle ověřeno. Atlas zůstává původní: krystalové textury samy obsahují průhledné pixely a z dálky mohou působit zrnitě. Přesná shoda se spuštěnou hrou zatím nebyla ověřena.
+
+Veřejný prohlížeč ověřil přepínání a jeskynní řezy i chůzi na jednom místě. Přepnutí z kamery do chůze může stále začít uvnitř terénu; dočasně pomůže létání a vystoupání klávesou E. Automatický bezpečný výběr startovní pozice není hotový. Tento test nepotvrzuje správnost všech modovaných kolizních tvarů.

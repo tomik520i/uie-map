@@ -91,19 +91,19 @@ DIM80 dokončila všech 15 regionů za přibližně 416 sekund při jednom praco
 <!-- MEASURED EXPANSION START -->
 ## Nejnovější měření dokončených dimenzí (29. 10.)
 
-DIM84 je do tohoto měření zahrnutá jako soukromý výstup, dosud není ve veřejné ukázce.
-
 | Dimenze | Dlaždice | Povrchová geometrie | Jeskynní geometrie | Celé výstupy na disku | První průchod všech tří vrstev |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 80 | 138 | 32.01 MiB | 41.10 MiB | 143.82 MiB | 25.33 min |
 | 81 | 48 | 7.13 MiB | 13.85 MiB | 81.05 MiB | 7.43 min |
 | 82 | 1 | 0.03 MiB | 0.03 MiB | 53.61 MiB | 0.12 min |
 | 83 | 161 | 7.05 MiB | 7.05 MiB | 71.94 MiB | 6.62 min |
-| 84 | 161 | 28.51 MiB | 29.21 MiB | 116.02 MiB | 19.59 min |
-| 85 | 82 | 13.32 MiB | 14.40 MiB | 87.62 MiB | 11.09 min |
+| 84 | 161 | 15.91 MiB | 16.22 MiB | 150.21 MiB | 19.59 min |
+| 85 | 82 | 13.32 MiB | 14.40 MiB | 87.64 MiB | 11.09 min |
 
-Společné obsazení uvedených výstupů při tomto měření: **554.05 MiB**. Každý inode je v tomto součtu započten pouze jednou i napříč vrstvami a dimenzemi. Celé výstupy zahrnují přítomné atlasy, metadata, kolize, uzávěry, historii a pracovní soubory; nezahrnují adresářová metadata, zdrojový svět, externí katalog, zálohy a budoucí rezervu. Měření živého provozu není atomický snímek. Geometrické sloupce měří pouze odkazované publikované soubory.
+Společné obsazení uvedených výstupů při tomto měření: **588.26 MiB**. Každý inode je v tomto součtu započten pouze jednou i napříč vrstvami a dimenzemi. Celé výstupy zahrnují přítomné atlasy, metadata, kolize, uzávěry, historii a pracovní soubory; nezahrnují adresářová metadata, zdrojový svět, externí katalog, zálohy a budoucí rezervu. Měření živého provozu není atomický snímek. Geometrické sloupce měří pouze odkazované publikované soubory.
 
 Čas je součet skutečných prvních běhů povrch→kolize→jeskyně při jednom pracovníku, včetně spuštění a publikování. Nezahrnuje následnou ruční kontrolu a nasazení a není předpovědí jiného světa.
 
 <!-- MEASURED EXPANSION END -->
+
+DIM84 byla 29. 10. znovu přepočítána s opraveným katalogem. Geometrické velikosti v tabulce odpovídají této nové generaci; časový sloupec zachovává první původní běh. Přítomná historie obou generací zvětšuje celkové obsazení výstupu i při menší aktuální geometrii.

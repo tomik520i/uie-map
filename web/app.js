@@ -779,7 +779,10 @@ function initViewer() {
       fog.near = far * 0.6;
       fog.far = far;
       const p = camera.position;
-      const waiting = state.fly.walking && state.walker.waiting ? ' · načítám bloky…' : '';
+      const waiting = state.fly.walking && state.walker.waiting
+        ? state.walker.waitingReason === 'embedded'
+          ? ' · uvnitř terénu — G přepne na létání, E vystoupá'
+          : ' · čekám na bloková data…' : '';
       $('fly-position').textContent = `X ${p.x.toFixed(1)} · Y ${p.y.toFixed(1)} · Z ${p.z.toFixed(1)}${waiting}`;
       showCaveCoverage();
       renderer.render(scene, camera);

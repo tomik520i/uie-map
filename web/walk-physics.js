@@ -126,6 +126,7 @@ export function createWalker({ shapeAt }) {
   let onGround = false;
   let inLiquid = false;
   let waiting = false;
+  let waitingReason = null;
   let lastSafe = null;
 
   const box = (x, y, z) => [x - BODY.half, y, z - BODY.half, x + BODY.half, y + BODY.height, z + BODY.half];
@@ -231,8 +232,9 @@ export function createWalker({ shapeAt }) {
   };
 
   function reconcile() {
+    waitingReason = null;
     const status = occupancy();
-    if (status.unknown) return false;
+    if (status.unknown) { waitingReason = 'unloaded'; return false; }
     if (!status.blocked) { lastSafe = { ...pos }; return true; }
     const original = { ...pos };
     // Prefer a previously clear position, but revalidate it against the current data first.
@@ -258,6 +260,7 @@ export function createWalker({ shapeAt }) {
       }
     }
     Object.assign(pos, original);
+    waitingReason = 'embedded';
     return false;
   }
 
@@ -270,6 +273,7 @@ export function createWalker({ shapeAt }) {
     const recovered = pos.x !== before.x || pos.y !== before.y || pos.z !== before.z;
     const below = shape(Math.floor(pos.x), Math.floor(pos.y - 0.01), Math.floor(pos.z));
     waiting = below === undefined;
+    waitingReason = waiting ? 'unloaded' : null;
     inLiquid = kindAt(pos.x, pos.y + 0.4, pos.z) === 'liquid';
     const climbing = touches('climb');
     const f = clampUnit(input.forward);
@@ -303,6 +307,7 @@ export function createWalker({ shapeAt }) {
     get onGround() { return onGround; },
     get inLiquid() { return inLiquid; },
     get waiting() { return waiting; },
+    get waitingReason() { return waitingReason; },
     place({ x, y, z }) {
       pos.x = x; pos.y = y; pos.z = z;
       vy = 0;

@@ -1,6 +1,6 @@
 # Dimenze — rozpoznání, render a webový přepínač
 
-**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. K veřejnému připojení zbývá: DIM84, DIM85. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
+**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. DIM84 má dokončená data soukromě; před zveřejněním zbývá vyřešit vlastnosti krystalových bloků OreSpawn podle dimenze. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 
 ```sh
 python world_layout.py /cesta/k/vlastnimu/svetu
@@ -85,7 +85,7 @@ Vstupem serveru zůstává `node server.mjs`; tento soubor je kompatibilní i s 
 <!-- CURRENT EXPANSION START -->
 ## Aktuální nasazení dalších dimenzí (27. 10.)
 
-Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. K veřejnému připojení zbývá: DIM84, DIM85. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
+Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. DIM84 má dokončená data soukromě; před zveřejněním zbývá vyřešit vlastnosti krystalových bloků OreSpawn podle dimenze. DIM−112 neobsahuje bloky. Nether zatím není podporovaný.
 
 | Dimenze | Veřejných dlaždic | Povrch / kolize / jeskyně |
 | --- | ---: | --- |
@@ -94,7 +94,10 @@ Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83 v
 | 81 | 48 | **HOTOVO / NASAZENO** |
 | 82 | 1 | **HOTOVO / NASAZENO** |
 | 83 | 161 | **HOTOVO / NASAZENO** |
+| 85 | 82 | **HOTOVO / NASAZENO** |
 
 Před zveřejněním proběhlo nezávislé ověření geometrie, kolizních dat a jeskynních párů. Prohlížeč ověřil přepnutí, úplné načtení potřebných řezů a návrat na hlavní mapu. Skupinové aktualizace zpracovávají dimenze postupně, takže počet nových dimenzí nezvyšuje počet současně spuštěných rendererů v každé frontě. Povrchová a jeskynní fronta ale mohou běžet souběžně; nejde o globální limit všech služeb na serveru. Staré samostatné časovače DIM80/82 byly vypnuté.
+
+Mapa vykresluje uložené chunky; negeneruje neprozkoumaný terén podle seedu. Proto mohou například DIM81 nebo DIM83 vypadat jako oddělené ostrůvky či sloupce, i když je celý uložený rozsah hotový. DIM82 obsahuje jediný uložený chunk. Jeskynní režim zpřístupňuje existující podzemní geometrii; u mělké ploché dimenze jako DIM83 nemusí řez nad povrchem vzhled vůbec změnit.
 
 <!-- CURRENT EXPANSION END -->

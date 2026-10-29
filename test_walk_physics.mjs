@@ -200,10 +200,15 @@ test('recovery is bounded and does not repeatedly climb towards a remote canopy'
   let ready = false;
   const w = createWalker({ shapeAt: (x, y) => ready ? blockShape(y < 110 ? 'stone' : 'air') : undefined });
   w.place({ x: 0.5, y: 64, z: 0.5 });
+  assert.equal(w.waitingReason, 'unloaded');
   ready = true;
   run(w, 2, { jump: true, right: 1 });
   assert.deepEqual(w.position, { x: 0.5, y: 64, z: 0.5 });
   assert.ok(w.waiting);
+  assert.equal(w.waitingReason, 'embedded', 'loaded solid terrain is not pending data');
+  w.place({ x: 0.5, y: 110, z: 0.5 });
+  assert.equal(w.waiting, false);
+  assert.equal(w.waitingReason, null);
 });
 
 test('a world edit rolls back to a still-clear position instead of climbing a tall new wall', () => {

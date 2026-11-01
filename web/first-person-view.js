@@ -214,6 +214,7 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
     walking = next;
     if (dragMode) onMessage(dragMessage(), 'info');
     else if (pauseShown) onMessage(pausedMessage(), 'info');
+    else onMessage(null);
     onChange('walk');
   }
 

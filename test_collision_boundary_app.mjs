@@ -61,7 +61,7 @@ function harness(search=''){
   const tiles=new Map([['0,0',{sha:GEO.slice(0,12),object:GEO,walk:flat}],['1,0',{sha:'d'.repeat(12),object:'d'.repeat(64),walk:flat}]]);
   const context={window:{location:{search:search.replace('INDEX',net.indexHash)}},document:{hidden:false,addEventListener(){}},
     URLSearchParams,DATA_URL:'./data/',console:{warn(){}},setInterval:()=>0,performance,
-    state:{fly:{walking:true},cut:null,blockIndex:new Map(),dirty:false},camera:{position:{x:60,y:66,z:5}},
+    state:{fly:{walking:true,get needsWalkData(){return this.walking;}},cut:null,blockIndex:new Map(),dirty:false},camera:{position:{x:60,y:66,z:5}},
     hires:{index:{tileSize:64,indexSha256:'g'.repeat(64),atlasSha256:ATLAS,context:{caves:false}},tiles},
     visibleHiresAtlasSha:()=>atlas,$:id=>id==='opt-cut-cap'?cap:help,
     createCollisionFollower:o=>createCollisionFollower({...o,fetcher:net.fetcher}),

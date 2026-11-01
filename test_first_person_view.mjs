@@ -130,6 +130,7 @@ test('unknown entry can be retried after data arrive without moving the camera e
   h.view.setWalking(true);assert.equal(h.view.walking,false);assert.deepEqual(h.camera.position,before);
   assert.equal(h.view.needsWalkData,true,'Rejected entry requests data without enabling physics');
   assert.match(h.lastMessage(),/data/);ready=true;h.view.setWalking(true);assert.equal(h.view.walking,true);
+  assert.equal(h.lastMessage(),null,'Successful retry clears obsolete refusal');
   h.view.exitToMap();assert.equal(h.view.needsWalkData,false);
 });
 

@@ -8,19 +8,25 @@ function harness(search=''){
  const updates=[],calls=[],help={};let atlas='atlas1';
  const source={ready:false,update:view=>updates.push(view),loadIndex:()=>{calls.push('loadIndex');return Promise.resolve();},loadPair:()=>{calls.push('loadPair');return Promise.resolve();}};
  const context={window:{location:{search}},document:{hidden:false,addEventListener:()=>{}},URLSearchParams,DATA_URL:'./data/',
-  state:{fly:{walking:false},cut:null},camera:{position:{x:80,z:-90}},hires:{tiles:new Map([['1,-2',{sha:'one'}]])},
+  state:{fly:{walking:false,requested:false,get needsWalkData(){return this.walking||this.requested;}},cut:null},camera:{position:{x:80,z:-90}},hires:{tiles:new Map([['1,-2',{sha:'one'}]])},
   visibleHiresAtlasSha:()=>atlas,$:()=>help,console,setInterval:()=>{},
   createCollisionFollower:()=>{calls.push('follower');return source;},
   createCollisionSource:()=>{calls.push('pair');return source;},createCollisionWorld:()=>{calls.push('index');return source;}};
  const api=vm.runInNewContext(code+';({start:startCollisionPilot,refresh:refreshCollisionPilot,strict:()=>collisionStrict})',context);
  return {api,context,updates,calls,source,setAtlas:value=>atlas=value};
 }
-test('default creates automatic follower; only active surface walking enables it',()=>{
+test('default creates automatic follower; active surface walking enables it',()=>{
  const h=harness();h.api.start();assert.deepEqual(h.calls,['follower']);assert.equal(h.api.strict(),false);
  h.api.refresh();assert.equal(Boolean(h.updates.at(-1).walking),false);
  h.context.state.fly.walking=true;h.api.refresh();assert.equal(h.updates.at(-1).walking,true);
  h.context.state.cut=30;h.api.refresh();assert.equal(h.updates.at(-1).walking,false);
  h.context.state.cut=null;h.context.document.hidden=true;h.api.refresh();assert.equal(h.updates.at(-1).walking,false);
+});
+test('rejected surface entry requests collision data without claiming walking is active',()=>{
+ const h=harness();h.api.start();h.context.state.fly.requested=true;h.api.refresh();
+ assert.equal(h.context.state.fly.walking,false);assert.equal(h.updates.at(-1).walking,true);
+ h.context.document.hidden=true;h.api.refresh();assert.equal(h.updates.at(-1).walking,false);
+ h.context.document.hidden=false;h.context.state.fly.requested=false;h.api.refresh();assert.equal(h.updates.at(-1).walking,false);
 });
 test('geometry callback refuses a changed atlas before the next refresh',()=>{
  const h=harness();h.api.start();h.context.state.fly.walking=true;h.api.refresh();

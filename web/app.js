@@ -2285,10 +2285,10 @@ function refreshCollisionPilot() {
   const pair = collisionPilot.pair;
   const key = pair ? `${pair.x / 64},${pair.z / 64}` : '';
   const atlasSha=visibleHiresAtlasSha();
-  collisionPilot.update({walking:state.fly?.walking && !document.hidden && (collisionStrict || state.cut===null), x:camera.position.x, z:camera.position.z,
+  collisionPilot.update({walking:state.fly?.needsWalkData && !document.hidden && (collisionStrict || state.cut===null), x:camera.position.x, z:camera.position.z,
     geometrySha:hires.tiles.get(key)?.sha,
     geometryAt:(tileKey)=>visibleHiresAtlasSha()===atlasSha?hires.tiles.get(tileKey)?.sha:undefined, atlasSha});
-  if (state.fly?.walking) {
+  if (state.fly?.needsWalkData) {
     if(!collisionStrict){
       $('walk-help').textContent = (state.cut!==null
         ? 'Podzemní kolize jsou přibližné. Plavání vyžaduje zapnuté uzávěry řezu a načtená podzemní data.'

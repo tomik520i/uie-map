@@ -44,6 +44,7 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
   sensitivity = LOOK_RADIANS_PER_PIXEL, walker = null, eyeHeight = 1.62, walkStart = null } = {}) {
   let mode = 'orbit';
   let walking = false;    // walk with collisions (walker) instead of free flight; only inside 'fly' mode
+  let walkRequested = false; // fetch collision data after rejected entry while flight remains usable
   let saved = null;
   let yaw = 0;
   let pitch = 0;
@@ -165,6 +166,11 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
     }
     if (walking) {
       const moved = walker.step(Number.isFinite(dt) ? dt : 0, { ...motion.input(), yaw });
+      if (walker.waitingReason === 'embedded') {
+        setWalking(false);
+        onMessage('Načtený terén zasahuje do postavy. Přepnuto na létání; přesuňte se do volného prostoru (E nahoru) a zkuste G znovu.', 'warn');
+        return false;
+      }
       if (!moved) return false;
       const p = walker.position;
       camera.position.set(p.x, p.y + eyeHeight, p.z);
@@ -185,16 +191,27 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
   /** Switch between free flight and walking with collisions (needs a walker). The camera stays where it is. */
   function setWalking(on) {
     const next = Boolean(on) && walker !== null && mode === 'fly';
+    walkRequested = next;
     if (next === walking) return;
-    walking = next;
     motion.clear();
-    if (walking) {
+    if (next) {
       const eye = { x: camera.position.x, y: camera.position.y - eyeHeight, z: camera.position.z };
-      walker.place(walkStart?.(eye) ?? eye);
+      const suggested = walkStart?.(eye);
+      walker.place(suggested ?? eye);
+      // Recheck the camera if the surface suggestion landed inside terrain or unknown data.
+      if (walker.waiting && suggested) walker.place(eye);
+      if (walker.waiting) {
+        onMessage(walker.waitingReason === 'unloaded'
+          ? 'Chůzi zatím nelze zapnout: bloková data se ještě načítají nebo zde nejsou dostupná. Zůstáváte v létání; zkuste to znovu po načtení.'
+          : 'Chůzi zde nelze zapnout: postava by byla uvnitř terénu. Zůstáváte v létání; přesuňte se do volného prostoru (E nahoru) a zkuste G znovu.', 'warn');
+        onChange('walk');
+        return;
+      }
       const p = walker.position;
       camera.position.set(p.x, p.y + eyeHeight, p.z);
       camera.updateMatrixWorld();
     }
+    walking = next;
     if (dragMode) onMessage(dragMessage(), 'info');
     else if (pauseShown) onMessage(pausedMessage(), 'info');
     onChange('walk');
@@ -202,6 +219,7 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
 
   function exitToMap() {
     if (disposed || mode !== 'fly') return;
+    walkRequested = false;
     walking = false;
     mode = 'orbit';
     pauseShown = false;
@@ -310,6 +328,7 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
     get locked() { return locked(); },
     get dragMode() { return dragMode; },
     get walking() { return walking; },
+    get needsWalkData() { return mode === 'fly' && (walking || walkRequested); },
     setWalking,
     get yaw() { return yaw; },
     get pitch() { return pitch; },

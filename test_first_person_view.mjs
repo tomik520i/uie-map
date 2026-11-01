@@ -17,7 +17,7 @@ const walkPhysics = await import(moduleURL(read('./web/walk-physics.js')));
 const flush = () => new Promise((resolve) => { setImmediate(resolve); });
 const event = (type, fields = {}) => Object.assign(new Event(type, { cancelable: true }), fields);
 
-function harness({ lock = 'promise', walker = null } = {}) {
+function harness({ lock = 'promise', walker = null, walkStart = null } = {}) {
   const doc = new EventTarget();
   Object.assign(doc, { hidden: false, pointerLockElement: null, activeElement: null, exitCalls: 0 });
   doc.exitPointerLock = () => {
@@ -55,7 +55,7 @@ function harness({ lock = 'promise', walker = null } = {}) {
   const h = { doc, win, canvas, camera, controls, grant, changes: [], messages: [], modes: [] };
   h.motion = createFlyMotion({ speed: 10, boost: 4 });
   h.view = fpv.createFirstPersonView({
-    camera, controls, canvas, window: win, document: doc, motion: h.motion, walker,
+    camera, controls, canvas, window: win, document: doc, motion: h.motion, walker, walkStart,
     onChange: (kind) => h.changes.push(kind), onModeChange: (mode) => h.modes.push(mode),
     onMessage: (text, tone) => h.messages.push([text, tone]),
   });
@@ -112,6 +112,56 @@ test('G switches to walking: the body lands on the ground, the eye is 1.62 above
   noWalker.view.enterFly();
   noWalker.view.setWalking(true);
   assert.equal(noWalker.view.walking, false, 'walking needs a walker');
+});
+
+test('buried entry stays in flight with unchanged camera and permits escape', () => {
+  const walker = walkPhysics.createWalker({ shapeAt: (x,y) => walkPhysics.blockShape(y < 150 ? 'stone' : 'air') });
+  const h = harness({walker});h.view.enterFly();h.view.requestLock();h.grant();
+  const before=h.camera.position.clone();h.key('KeyG');
+  assert.equal(h.view.walking,false);assert.deepEqual(h.camera.position,before);
+  assert.match(h.lastMessage(),/uvnitř terénu/);
+  h.key('KeyE');assert.equal(h.view.step(.1),true);assert.ok(h.camera.position.y>before.y);
+});
+
+test('unknown entry can be retried after data arrive without moving the camera early', () => {
+  let ready=false;
+  const walker=walkPhysics.createWalker({shapeAt:()=>ready?walkPhysics.blockShape('air'):undefined});
+  const h=harness({walker});h.view.enterFly();const before=h.camera.position.clone();
+  h.view.setWalking(true);assert.equal(h.view.walking,false);assert.deepEqual(h.camera.position,before);
+  assert.equal(h.view.needsWalkData,true,'Rejected entry requests data without enabling physics');
+  assert.match(h.lastMessage(),/data/);ready=true;h.view.setWalking(true);assert.equal(h.view.walking,true);
+  h.view.exitToMap();assert.equal(h.view.needsWalkData,false);
+});
+
+test('late solid data releases an embedded walker back to controllable flight', () => {
+  let solid=false;
+  const walker=walkPhysics.createWalker({shapeAt:()=>walkPhysics.blockShape(solid?'stone':'air')});
+  const h=harness({walker});h.view.enterFly();h.view.requestLock();h.grant();h.view.setWalking(true);
+  solid=true;const before=h.camera.position.clone();h.view.step(.05);
+  assert.equal(h.view.walking,false);assert.deepEqual(h.camera.position,before);
+  assert.match(h.lastMessage(),/Přepnuto na létání/);
+  h.key('KeyE');h.view.step(.1);assert.ok(h.camera.position.y>before.y);
+});
+
+test('invalid terrain suggestion falls back to clear camera position', () => {
+  const walker=walkPhysics.createWalker({shapeAt:(x,y)=>walkPhysics.blockShape(y<64?'stone':'air')});
+  const h=harness({walker,walkStart:p=>({...p,y:50})});h.view.enterFly();
+  const before=h.camera.position.clone();h.view.setWalking(true);
+  assert.equal(h.view.walking,true);assert.deepEqual(h.camera.position,before);
+});
+
+test('slab correction and low cave ceiling remain usable, embedded ceiling is rejected', () => {
+  for(const [feet,blockY,name,ceiling,allowed,expected] of [
+    [64.2,64,'stone_slab',null,true,64.5],
+    [64,63,'stone',66,true,64],
+    [64,63,'stone',65,false,64],
+  ]) {
+    const walker=walkPhysics.createWalker({shapeAt:(x,y)=>walkPhysics.blockShape(
+      y===blockY?name:ceiling!==null&&y>=ceiling?'stone':'air')});
+    const h=harness({walker});h.camera.position.set(.5,feet+1.62,.5);h.view.enterFly();
+    h.view.setWalking(true);assert.equal(h.view.walking,allowed);
+    assert.ok(Math.abs(h.camera.position.y-(expected+1.62))<1e-6);
+  }
 });
 
 test('unsupported, rejected or failed pointer lock shows a message and Map stays usable', async () => {

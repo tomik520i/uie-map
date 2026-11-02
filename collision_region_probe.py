@@ -234,6 +234,19 @@ def _rect_keys(rect):
             for cz in range(rect.z >> 4, (rect.z + rect.depth) >> 4)}
 
 
+def input_area(jx, jz, tiles=None):
+    """A single-tile retry reads and validates its complete halo, not unrelated chunks.
+
+    Older reports without inputScope retain the original whole-region footprint.
+    """
+    if tiles is not None and len(tiles) == 1:
+        tx, tz = tiles[0]
+        if (tx // 8, tz // 8) != (jx, jz):
+            raise ProbeError('tile outside region')
+        return wh.tile_area(tx, tz)[0]
+    return wh.job_area(jx, jz)[0]
+
+
 def probe_region(jx, jz, *, world, hires_store, scratch_root, tools, tiles=None, pilot_store=None,
                  budget_bytes=DEFAULT_BUDGET_BYTES, min_free_bytes=DEFAULT_MIN_FREE_BYTES,
                  disk_free=lambda p: shutil.disk_usage(p).free, clock=time.perf_counter,
@@ -269,6 +282,9 @@ def probe_region(jx, jz, *, world, hires_store, scratch_root, tools, tiles=None,
     try:
         if outside:
             raise ProbeError(f'tiles outside region {jx},{jz}: {outside}')
+        if len(selected) == 1:
+            area = input_area(jx, jz, selected)
+            report['inputScope'] = 'tile-halo-v1'
         visible = tools.read_index(hires_store)
         report['visible'] = {'indexSha256': visible['indexSha256'], 'atlasSha256': visible['atlasSha256'],
                              'identity': visible['identity'], 'planComplete': visible.get('planComplete')}

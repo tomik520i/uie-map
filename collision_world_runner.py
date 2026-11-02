@@ -12,6 +12,7 @@ import os
 import shutil
 import signal
 import time
+from collections import Counter
 
 import collision_bundle as cb
 import collision_export as ce
@@ -125,14 +126,28 @@ def run_pass(*,out,world,hires_store,tools,budget_bytes=30*1024**3,min_free_byte
     if max_regions is not None:
         if type(max_regions)is not int or max_regions<1:raise ValueError('max_regions must be positive')
         jobs=jobs[:max_regions]
+    selected_regions=len(jobs)
+    # A live region can save faster than a 64-tile probe completes. On the next
+    # pass, split only that known failure into independently checked transactions.
+    expanded=[];split_regions=[]
+    for (jx,jz),tiles in jobs:
+        prior=load_report(out/'reports'/f'{jx},{jz}.json')
+        if (len(tiles)>1 and isinstance(prior,dict) and prior.get('ok') is False
+                and prior.get('scratchCleanup') is True
+                and prior.get('fatal')=='world input or block registry changed during the probe'):
+            expanded.extend([((jx,jz),[tile]) for tile in tiles]);split_regions.append([jx,jz])
+        else:expanded.append(((jx,jz),tiles))
+    jobs=expanded
+    remaining=Counter(key for key,_ in jobs);failed_regions=set();reused_units=Counter()
     cache=publisher.PairProofCache() if cache is None else cache
     expected=publisher._read_pointer(out/'store')
     status=dict(format=FORMAT,state='running',startedAt=clock(),updatedAt=clock(),totalRegions=all_jobs,
-                selectedRegions=len(jobs),completedRegions=0,reusedRegions=0,failedRegions=0,coldRetries=0,
+                selectedRegions=selected_regions,completedRegions=0,reusedRegions=0,failedRegions=0,coldRetries=0,
                 publishedTiles=len(publisher._read_index(out/'store',expected)) if expected else 0,
                 indexSha256=expected,activeRegion=None,errors=[],scope='published-surface-world',
                 plannedTiles=len(planned['tiles']),planIndexSha256=planned.get('indexSha256'))
     status['recoveredScratchDirectories']=recovered
+    status.update(splitRegions=split_regions,totalWorkUnits=len(jobs),completedWorkUnits=0)
     def save():
         status['updatedAt']=clock();write_json(out/'status.json',status)
     save()
@@ -142,7 +157,8 @@ def run_pass(*,out,world,hires_store,tools,budget_bytes=30*1024**3,min_free_byte
             reserve=640*1024**2
             if region.logical_bytes(out)+reserve>budget_bytes or disk_free(out)-reserve<min_free_bytes:
                 status.update(state='stopped-budget',reason='store budget or disk reserve');break
-            path=out/'reports'/f'{jx},{jz}.json'
+            suffix=f'-tile-{tiles[0][0]},{tiles[0][1]}' if [jx,jz] in split_regions else ''
+            path=out/'reports'/f'{jx},{jz}{suffix}.json'
             report=load_report(path);reused=False
             def render_report():
                 status['phase']='rendering';save()
@@ -193,15 +209,20 @@ def run_pass(*,out,world,hires_store,tools,budget_bytes=30*1024**3,min_free_byte
                         reused=False;report=render_report()  # one repair attempt for missing staged objects
                 if status['state']=='stopped-budget':break
                 expected=result['indexSha256'];status['indexSha256']=expected
-                status['publishedTiles']=result['entries'];status['completedRegions']+=1
-                status['reusedRegions']+=int(reused);status['phase']='published';save()
+                status['publishedTiles']=result['entries'];status['completedWorkUnits']+=1
+                remaining[(jx,jz)]-=1;reused_units[(jx,jz)]+=int(not reused)
+                if remaining[(jx,jz)]==0 and (jx,jz) not in failed_regions:
+                    status['completedRegions']+=1
+                    status['reusedRegions']+=int(reused_units[(jx,jz)]==0)
+                status['phase']='published';save()
             except (ValueError,KeyError,TypeError,OSError,ce.ExportError,ce.TileError,probe.ProbeError) as error:
                 # Failures are visible and the next pass can retry; never drop other successful regions.
-                status['failedRegions']+=1
+                remaining[(jx,jz)]-=1;failed_regions.add((jx,jz))
+                status['failedRegions']=len(failed_regions)
                 status['errors']=(status['errors']+[dict(region=[jx,jz],message=str(error)[:500])])[-32:]
                 status['phase']='region-error';save()
         else:
-            status['state']='complete' if not status['failedRegions'] and len(jobs)==all_jobs else 'partial'
+            status['state']='complete' if not status['failedRegions'] and selected_regions==all_jobs else 'partial'
         status['finishedAt']=clock();status['activeRegion']=None;save();return status
     except BaseException as error:
         status.update(state='interrupted',reason=type(error).__name__+': '+str(error)[:400]);save();raise

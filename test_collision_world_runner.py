@@ -31,6 +31,34 @@ class RunnerTests(unittest.TestCase):
         self.calls.clear();result=self.run_pass()
         self.assertEqual(result['reusedRegions'],2);self.assertEqual(self.calls,[])
 
+    def test_live_change_splits_next_pass_and_counts_regions_not_tiles(self):
+        self.tools.read_index=lambda p:dict(tiles={'0,0':'a'*64,'1,0':'a'*64,'8,0':'b'*64})
+        reports=self.out/'reports';reports.mkdir()
+        runner.write_json(reports/'0,0.json',dict(ok=False,scratchCleanup=True,
+            fatal='world input or block registry changed during the probe'))
+        result=self.run_pass()
+        self.assertEqual(result['state'],'complete')
+        self.assertEqual(result['splitRegions'],[[0,0]])
+        self.assertEqual(result['completedRegions'],2)
+        self.assertEqual(result['completedWorkUnits'],3)
+        self.assertTrue((reports/'0,0-tile-1,0.json').exists())
+        self.calls.clear();result=self.run_pass()
+        self.assertEqual(self.calls,[]);self.assertEqual(result['reusedRegions'],2)
+
+    def test_split_failure_stays_partial_and_other_tiles_continue(self):
+        self.tools.read_index=lambda p:dict(tiles={'0,0':'a'*64,'1,0':'a'*64,'8,0':'b'*64})
+        reports=self.out/'reports';reports.mkdir()
+        runner.write_json(reports/'0,0.json',dict(ok=False,scratchCleanup=True,
+            fatal='world input or block registry changed during the probe'))
+        def check(report,**kw):
+            if '0,0' in report['tiles']:raise ValueError('changed again')
+            return {k:'c'*64 for k in report['tiles']}
+        self.check.side_effect=check
+        result=self.run_pass()
+        self.assertEqual((result['state'],result['completedRegions'],result['failedRegions']),('partial',1,1))
+        self.assertEqual(result['completedWorkUnits'],2)
+        self.assertEqual(self.publish.call_count,2)
+
     def test_failed_region_does_not_publish_or_starve_remaining_queue(self):
         def check(report,**kw):
             if report['region']==[0,0]:raise ValueError('source changed')

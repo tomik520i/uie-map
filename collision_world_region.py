@@ -81,6 +81,12 @@ def accepted_updates(report, *, world, hires_store, tools):
         raise ValueError('region scratch cleanup incomplete')
     jx, jz = report['region']
     area, _ = probe.wh.job_area(jx, jz)
+    if report.get('inputScope') == 'tile-halo-v1':
+        keys = [ce.parse_tile(k) for k in report['tiles']]
+        if len(keys) != 1:raise ValueError('tile-scoped report must contain exactly one tile')
+        area = probe.input_area(jx, jz, keys)
+    elif 'inputScope' in report:
+        raise ValueError('unknown report input scope')
     source = report['source']
     if (tools.fingerprint(Path(world)/'region', area) != source['after']
             or ce.registry_sha256(tools.load_registry(world)) != source['registryAfter']):

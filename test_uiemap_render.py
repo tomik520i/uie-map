@@ -36,6 +36,17 @@ class RenderConfigTests(unittest.TestCase):
             command=render.plan(self.file,'42')['command']
             self.assertEqual(command[command.index('--catalog-dir')+1],str(self.root/'crystals'))
 
+    def test_nether_renders_full_surface_and_paired_interior_to_separate_stores(self):
+        region=self.root/'world/DIM-1/region';region.mkdir(parents=True);(region/'r.0.0.mca').write_bytes(bytes(8192))
+        outputs=[]
+        for mode in ['surface','caves']:
+            self.doc['dimensions']=[dict(key='-1',title='Nether',mode=mode)];self.save()
+            plan=render.plan(self.file,'-1');outputs.append(plan['out'])
+            self.assertEqual(plan['binding']['regionPath'],str(region))
+            self.assertEqual('--cave-caps' in plan['command'],mode=='caves')
+            self.assertNotIn('--max-jobs',plan['command'])
+        self.assertNotEqual(*outputs)
+
     def test_cave_success_requires_both_publication_receipts(self):
         self.doc['dimensions'][0]['mode']='caves';self.save();work=render.plan(self.file,'42')
         result=dict(published=True,indexSha256='a'*64)

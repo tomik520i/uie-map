@@ -31,6 +31,13 @@ class WebConfigTests(unittest.TestCase):
         self.assertNotIn('UIE_GENERATION_STORE',plan['environment'])
         view=next(v for v in plan['files'].values() if v.get('dimension')=='42')
         self.assertEqual(view['bounds'],dict(min=[-64,0,0],max=[64,256,128]))
+
+    def test_nether_without_published_interior_is_refused_before_creating_web(self):
+        (self.root/'world/DIM-1/region').mkdir(parents=True)
+        self.doc['dimensions']=[dict(key='-1',title='Nether',mode='surface')];self.file.write_text(json.dumps(self.doc))
+        before=set(self.root.rglob('*'))
+        with self.assertRaisesRegex(ValueError,'Nether.*cave companion'):serve.snapshot(self.file,'-1')
+        self.assertEqual(before,set(self.root.rglob('*')))
     def test_snapshot_repeat_is_immutable_and_tampering_refused(self):
         plan=serve.snapshot(self.file,'0');stage=serve.write_snapshot(plan)
         before={p.name:p.read_bytes() for p in stage.iterdir()}

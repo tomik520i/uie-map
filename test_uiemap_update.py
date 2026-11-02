@@ -42,11 +42,13 @@ class UpdateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'changed'):update.execute(work,run)
         self.assertEqual(len(calls),1)
 
-    def test_unsupported_dimension_rejected_before_execution(self):
+    def test_nether_update_is_planned_in_its_own_store(self):
         self.work();(self.root/'world/DIM-1/region').mkdir(parents=True)
         (self.root/'world/DIM-1/region/r.0.0.mca').write_bytes(b'\0'*8192)
         self.doc['dimensions'][1]['key']='-1';self.file.write_text(json.dumps(self.doc))
-        with self.assertRaisesRegex(ValueError,'Nether'):update.plan(self.file)
+        work=update.plan(self.file)
+        self.assertEqual([j['dimension'] for j in work['jobs']],['0','-1'])
+        self.assertNotEqual(work['jobs'][0]['out'],work['jobs'][1]['out'])
 
     def test_cave_gc_rejected_before_any_renderer(self):
         self.work();self.doc['dimensions'][1]['mode']='caves';self.file.write_text(json.dumps(self.doc))

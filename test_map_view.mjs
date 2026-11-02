@@ -4,11 +4,18 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import http from 'node:http';
-import { validateMapView, loadMapView } from './web/map-view.mjs';
+import { validateMapView, loadMapView, initialDimensionCut } from './web/map-view.mjs';
 import { createMapViewHandler } from './map-view-http.mjs';
 
 const view = () => ({ format: 'UIE_MAP_VIEW1', world: 'own-world', dimension: '42',
   title: 'Moje dimenze', bounds: { min: [-64, 0, -64], max: [64, 256, 64] }, focus: [0, 80, 0] });
+
+test('Nether defaults to a cave height cut, preserves explicit links and never enables absent caves',()=>{
+  assert.equal(initialDimensionCut({...view(),dimension:'-1',caves:true}),'96');
+  for(const requested of ['0','48','off','']) assert.equal(initialDimensionCut({...view(),dimension:'-1',caves:true},requested),requested);
+  assert.equal(initialDimensionCut({...view(),caves:true}),null);
+  assert.equal(initialDimensionCut({...view(),dimension:'-1',caves:false},'48'),null);
+});
 
 test('version two explicitly declares caves; legacy views cannot silently opt in',()=>{
   for(const caves of [true,false]) assert.equal(validateMapView({...view(),format:'UIE_MAP_VIEW2',caves}).caves,caves);

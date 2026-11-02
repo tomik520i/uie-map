@@ -27,7 +27,6 @@ def plan(config_path, dimension):
     rows=[row for row in doc['dimensions'] if row['key']==dimension]
     if len(rows)!=1:raise ValueError('Select a dimension explicitly present in the configuration')
     row=rows[0]
-    if dimension=='-1':raise ValueError('Configured Nether rendering is not implemented')
     if row['regions']==0:raise ValueError('Selected dimension has no saved region files')
     mode=row['mode'];out=Path(row['outputs'][mode])
     if out.resolve()!=out:raise ValueError('Linked output ancestors are not allowed')

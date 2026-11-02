@@ -1,4 +1,10 @@
 // Explicit whole-world-only bootstrap. It is not a legacy detail manifest.
+export function initialDimensionCut(view, requested = null) {
+  if (view?.caves !== true) return null;
+  if (requested !== null && requested !== undefined) return requested;
+  return view.dimension === '-1' ? '96' : null;
+}
+
 export function validateMapView(value) {
   const fail = message => { throw new Error(`map-view.json: ${message}`); };
   const keys = ['format', 'world', 'dimension', 'title', 'bounds', 'focus'];

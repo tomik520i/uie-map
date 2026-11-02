@@ -61,6 +61,8 @@ def snapshot(config_file,main_dimension,cave_config=None,include_collisions=Fals
     if main_dimension not in [row['key'] for row in doc['dimensions']]:raise ValueError('Main dimension is not selected')
     for row in doc['dimensions']:
         if row['mode']!='surface':raise ValueError('Web configuration currently supports surface dimensions only')
+        if row['key']=='-1' and row['key'] not in cave_stores:
+            raise ValueError('Nether view requires a published cave companion to see below the roof')
         store=Path(row['outputs']['surface'])
         if store.resolve()!=store:raise ValueError('Linked output ancestors are not allowed')
         expected=binding.make_binding(world=doc['world']['path'],world_id=doc['world']['id'],

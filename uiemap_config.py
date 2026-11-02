@@ -90,7 +90,7 @@ def validate(doc,*,base):
         row.update(path=found['path'],regionPath=str(world/found['regionPath']),regions=found['regions'],
                    levelDat=str(world/'level.dat'),outputs={name:str(root/name) for name in ('surface','caves','collisions')})
         if row['key']=='-1' and row['mode']=='surface':
-            warnings.append(dict(path=found['path'],reason='Nether surface below the roof is not implemented; do not treat this preview as a supported render'))
+            warnings.append(dict(path=found['path'],reason='Nether surface contains the roof; the viewer requires a published cave companion and starts with a height cut'))
     return dict(format=FORMAT,world=dict(id=world_id,path=str(world)),catalog=str(catalog),out=str(out),
                 dimensions=rows,limits=limits,web=web,warnings=warnings,renderReady=False,readOnly=True)
 

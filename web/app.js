@@ -39,7 +39,7 @@ import { contentHash, decodeVerifiedJson, diffEntries, generationBase, validateG
 import { sha256Hex } from './sha256.js';
 import { LodSwap } from './lod-swap.js';
 import { selectDistanceLod } from './lod-distance.js';
-import { loadMapView } from './map-view.mjs';
+import { loadMapView, initialDimensionCut } from './map-view.mjs';
 import { mountDimensionMenu } from './dimension-menu.mjs';
 import { meshBytesFromCounts, validateLodChunk, validateLodManifest } from './lod-contract.js';
 
@@ -2689,7 +2689,7 @@ function startStandaloneView(view) {
   state.focus = view.focus;
   state.cut = null;
   WORLD_CAVES = WORLD_CAVES && view.caves === true;
-  if (!WORLD_CAVES) state.cutRequest = null;
+  state.cutRequest = WORLD_CAVES ? initialDimensionCut(view, state.cutRequest) : null;
   $('title').textContent = view.title;
   document.title = view.title;
   const { min, max } = view.bounds;
@@ -2700,7 +2700,7 @@ function startStandaloneView(view) {
   for (const id of ['opt-overview', 'opt-players']) $(id).disabled = true;
   if (!WORLD_CAVES) for (const id of ['opt-cut','cut-level','opt-cut-cap']) $(id).disabled=true;
   const note = document.createElement('p'); note.className = 'note';
-  note.textContent = `Dimenze ${view.dimension}. ${WORLD_CAVES?'Jeskyně jsou připojené; zapni výškový řez.':'Jeskyně nejsou připojené.'} `
+  note.textContent = `Dimenze ${view.dimension}. ${WORLD_CAVES?(view.dimension==='-1'?'Nether se otevírá ve výškovém řezu pod stropem; výšku lze změnit.':'Jeskyně jsou připojené; zapni výškový řez.'):'Jeskyně nejsou připojené.'} `
     +(view.collisions?'Bloková data chůze jsou připojená; tvary některých modů zůstávají přibližné.':'Bloková data chůze nejsou připojená; chůze používá přibližnou geometrii.')+' Polohy hráčů nejsou připojené.';
   $('bounds').closest('section').append(note);
   const cutHelp=$('opt-cut-cap').closest('label').nextElementSibling;

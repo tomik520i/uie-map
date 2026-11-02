@@ -32,7 +32,7 @@ ID světa je stabilní identifikátor zvolený uživatelem. **Nepoužívejte ste
 
 Validace odmítá překrytí výstupu se světem či katalogem včetně jejich nadřazených adresářů, duplicitní klíče, chybné typy a neznámá pole. Soubor má limit64KiB. Kontrola neověřuje verzi Minecraftu, katalog, dostupnou RAM, volný disk ani obsazení portu. Limity jsou zatím ověřené hodnoty budoucího nastavení; tento nástroj je nevynucuje při běhu rendereru.
 
-`surface` a `caves` označují zamýšlený režim. Nether se stropem vyžaduje další práci; `surface` pro dimenzi-1 proto zobrazí varování a zvláštní režim `ceiling` ještě není podporovaný. Přijetí konfigurace neznamená dokončenou podporu renderu dimenze.
+`surface` a `caves` označují zamýšlený režim. `surface` Netheru zachovává strop a zobrazí upozornění, že podzemní web vyžaduje také publikovaný režim `caves`. Samostatný režim `ceiling` není podporovaný. Přijetí konfigurace neznamená dokončené ověření konkrétní dimenze.
 
 Ověřeno19Linux testy (konfigurace a rozpoznání dimenzí), na Windows17prošlo a2POSIXkontroly byly přeskočené. Skutečný CLI náhled na UIE ověřil tři oddělené dimenze a společný registr, aniž vytvořil výstupní adresář nebo spustil render.
 
@@ -56,7 +56,7 @@ Příkaz čeká na dokončení a vypíše jméno své jednotky `uiemap-render-�
 
 Změna konfiguračního souboru mezi plánem a startem pracovníka je odmítnuta. Publikování proběhne až po dokončeném plánu bez chyb; výsledný JSON musí obsahovat `published: true` a konkrétní `indexSha256`. Při chybě zůstávají rozpracovaná data pro opravu a další pokus. Web se automaticky nepřepíná ani nerestartuje; ruční připojení hotového výstupu popisuje [DIMENZE.md](DIMENZE.md).
 
-Tento příkaz přijímá `surface` i `caves`, odmítá Nether `-1` kvůli nehotovému řešení stropu a nespouští další dimenze automaticky. Import katalogu z modpacku je samostatná nedokončená část. Na Windows je dostupný náhled, nikoli spuštění přes systemd.
+Tento příkaz přijímá `surface` i `caves`, nově dovoluje i experimentální Nether `-1` a nespouští další dimenze automaticky. Import katalogu z modpacku je samostatná nedokončená část. Na Windows je dostupný náhled, nikoli spuštění přes systemd.
 
 Ověření19.10.: celý skutečný povrch DIM42 spuštěný přes `--apply`,161dlaždic a publikování za přibližně65s; všech161SHA ověřeno.28Linux testů PASS. Veřejná data ani služby tímto testem nebyly přepnuté.
 
@@ -128,7 +128,7 @@ python -B uiemap.py update /cesta/config.json
 python -B uiemap.py update /cesta/config.json --apply
 ```
 
-Bez `--apply` se pouze připraví plán. S `--apply` se dimenze z konfigurace aktualizují postupně, vždy přes existující Linux systemd renderer s jeho limity RAM, pracovníků a rezervy disku. Nezměněné oblasti umí renderer převzít. Všechny dimenze se předem zkontrolují; Nether je zatím odmítnutý; caves se publikují spolu s daty řezu. Konfigurace je připnutá hashem a při změně se další práce zastaví.
+Bez `--apply` se pouze připraví plán. S `--apply` se dimenze z konfigurace aktualizují postupně, vždy přes existující Linux systemd renderer s jeho limity RAM, pracovníků a rezervy disku. Nezměněné oblasti umí renderer převzít. Všechny dimenze se předem zkontrolují; Nether vyžaduje pro následný web také jeskynní export; caves se publikují spolu s daty řezu. Konfigurace je připnutá hashem a při změně se další práce zastaví.
 
 První selhání průchod zastaví; výsledný JSON obsahuje dokončené výsledky a dosud nezpracované dimenze. Nestačí návratový kód 0: vyžaduje se potvrzení publikace pro správný svět, dimenzi, adresář a hash indexu. Návratový kód příkazu je 2 při neúspěchu, 0 při úspěchu nebo platném náhledu. Souhrn se zobrazí až po skončení průchodu; během běhu lze v druhém terminálu použít `uiemap.py status CONFIG`.
 
@@ -185,7 +185,7 @@ Ověřeno na soukromém store DIM42: skutečné odstranění jednoho nepoužíva
 
 ## Jeskynní export z konfigurace
 
-Pro vybranou dimenzi nastavte `"mode": "caves"`. Stejné příkazy `render` a `update` pak vytvoří geometrii i companion data pro uzavírání řezu v samostatném podadresáři `caves`; povrchový store se nepřepisuje. Používají se stejné limity RAM a volného disku. Nether `-1` zatím není podporovaný ani touto cestou.
+Pro vybranou dimenzi nastavte `"mode": "caves"`. Stejné příkazy `render` a `update` pak vytvoří geometrii i companion data pro uzavírání řezu v samostatném podadresáři `caves`; povrchový store se nepřepisuje. Používají se stejné limity RAM a volného disku. Nether `-1` lze nově zpracovat touto cestou; ověření celé skutečné dimenze a veřejné nasazení dosud probíhá.
 
 ```sh
 python -B uiemap.py render /data/cave-config.json --dimension 42 --apply
@@ -310,3 +310,9 @@ Tato možnost sama katalog nevytvoří ani neopraví pravidla modu. Připravte a
 Změna identity katalogu ve stávajícím úložišti může narazit na pomocný `backfill-progress.json` připravený pro původní identitu. Renderer v takovém případě může dokončit geometrii, ale správně odmítne její publikaci; nejde o důvod k odstranění geometrických dat. Pro novou instalaci použijte nový výstupní adresář. Migrace existujícího výstupu zatím vyžaduje zastavené zapisující úlohy, zálohu pomocné evidence a explicitní obnovení přípravy pod zámkem úložiště; automatický migrační příkaz není hotový. Nemažte tuto evidenci za běhu aktualizací.
 
 Ověření29.10.:61testů na Ubuntu; na Windows57prošlo a4POSIXkontroly přeskočeny. Plán nad skutečnými daty potvrdil oddělenou volbu katalogu pro jednu dimenzi a zachování výchozího katalogu druhé. Samostatný krystalový katalog DIM84 prošel soukromým pilotem; stav veřejného nasazení je v [přehledu dimenzí](DIMENZE.md).
+
+## Experimentální Nether (2. 11. 2026)
+
+Pro dimenzi `-1` připravte oddělené konfigurace `surface` a `caves`, obě se stejným světem, katalogem a výstupním kořenem. Povrch zachovává i strop. `serve` odmítne tuto dimenzi bez publikované jeskynní vrstvy připojené přes `--cave-config`; samotná střecha není dokončeným podzemním pohledem. Nový prohlížeč při otevření Netheru automaticky zvolí jeskynní řez Y96. Výšku lze změnit posuvníkem nebo odkazem `?cut=48`; `?cut=off` úmyslně zobrazí neříznutý povrch. Jde o výchozí výšku pohledu, nikoli mazání horních bloků nebo pravidlo generování světa. Průběžně se mění jen mapová data, herní svět zůstává beze změn.
+
+Stav: konfigurační a integrační testy prošly, celý skutečný Nether se právě renderuje v odděleném úložišti. Veřejný web tuto novou dimenzi ještě nenabízí. Jeskynní kolize mohou používat zjednodušenou geometrii stejně jako u ostatních řezů; připojení povrchových kolizí neznamená přesné blokové kolize v podzemním pohledu.

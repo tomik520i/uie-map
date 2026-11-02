@@ -40,6 +40,11 @@ class CapacityTests(unittest.TestCase):
     def test_empty_world_without_sample_has_no_invented_estimate(self):
         report=capacity.estimate(self.config);self.assertEqual(report['dimensions'][0]['renderSupport'],'empty')
         self.assertNotIn('geometryScenario',report['dimensions'][0])
+    def test_nether_is_not_reported_as_unimplemented(self):
+        self.region([(0,2,1)]);(self.root/'world/DIM-1').mkdir()
+        (self.root/'world/region').rename(self.root/'world/DIM-1/region')
+        doc=json.loads(self.config.read_text());doc['dimensions'][0]['key']='-1';self.config.write_text(json.dumps(doc))
+        self.assertEqual(capacity.estimate(self.config)['dimensions'][0]['renderSupport'],'requires-render-validation')
     def test_output_usage_counts_shared_inode_once_across_layers(self):
         config=capacity.uiemap_config.load(self.config);outputs=config['dimensions'][0]['outputs']
         surface=Path(outputs['surface']);caves=Path(outputs['caves']);surface.mkdir(parents=True);caves.mkdir()

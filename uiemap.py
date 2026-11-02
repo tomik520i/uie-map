@@ -15,6 +15,7 @@ import uiemap_services
 import uiemap_cave_gc
 import uiemap_collisions
 import uiemap_capacity
+import uiemap_modpack
 
 
 def main(argv=None):
@@ -72,7 +73,10 @@ def main(argv=None):
     serve.add_argument('--cave-config',type=Path)
     serve.add_argument('--collisions',action='store_true')
     serve.add_argument('--apply',action='store_true',help='Write web configuration and start Node in foreground')
+    modpack=commands.add_parser('modpack',help='Inspect mod JAR metadata and texture names without running Minecraft')
+    modpack.add_argument('--mods',required=True,type=Path);modpack.add_argument('--include-textures',action='store_true')
     args=parser.parse_args(argv)
+    if args.command=='modpack':return uiemap_modpack.main(['--mods',str(args.mods)]+(['--include-textures'] if args.include_textures else []))
     if args.command=='check':return uiemap_config.main([str(args.config)])
     if args.command=='status':return uiemap_status.main([str(args.config)])
     if args.command=='capacity':return uiemap_capacity.main([str(args.config),'--generations',str(args.generations)]+(['--sample-store',str(args.sample_store)] if args.sample_store else [])+(['--measure-output'] if args.measure_output else []))

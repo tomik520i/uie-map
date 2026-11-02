@@ -117,7 +117,7 @@ def estimate(config_path,*,sample_store=None,generations=2,measure_output=False)
     rows=[]
     for dimension in config['dimensions']:
         data=inventory(dimension['regionPath']);row=dict(key=dimension['key'],mode=dimension['mode'],**data)
-        row['renderSupport']='not-implemented' if dimension['key']=='-1' else 'empty' if data['savedChunks']==0 else 'requires-render-validation'
+        row['renderSupport']='empty' if data['savedChunks']==0 else 'requires-render-validation'
         if measured is not None:
             if measured['mode']!=dimension['mode']:raise ValueError('Sample mode differs from selected dimension')
             projected=math.ceil(measured['bytesPerTile']*data['occupiedTiles'])

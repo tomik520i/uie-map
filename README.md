@@ -10,6 +10,8 @@ Směřujeme k samostatnému programu s konfigurací světa, výběrem více dime
 
 Jednotný příkaz `python uiemap.py` už nabízí kontrolu konfigurace, import existujícího exportu do katalogu, render, stav, aktualizace, systemd timer a web. Nový `capacity` spočítá uložené chunky, odhadne geometrii z explicitního vzorku a volitelně změří skutečné obsazení výstupů včetně sdílených souborů. Začněte [instalačním postupem](INSTALACE.md) a [vzorem konfigurace](examples/config.json). Podrobnosti jsou v [KONFIGURACE.md](KONFIGURACE.md); stav jednotlivých dimenzí v [DIMENZE.md](DIMENZE.md). Import libovolného modpacku a úplná automatizace provozu stále čekají.
 
+Nový příkaz `python uiemap.py modpack --mods /cesta/mods` umí bez Minecraft klienta prohlédnout modové JARy, metadata a kandidáty textur. [Český návod a omezení](MODPACK.md). Inventář je hotový; automatický převod všech modelů a sestavení katalogu ze samotných JARů zatím hotové nejsou.
+
 ## Co už funguje
 
 - Čtení Anvil regionů, Forge registru bloků a metadat, včetně NotEnoughIDs (`Blocks16`).
@@ -30,7 +32,7 @@ Současný katalog UIE vznikl jednorázovým exportem z klienta s exportérem. T
 - Podpora modovaných bloků je neúplná. Některé mají zjednodušený tvar či metadata; chybějící model může být fialový zástupný blok.
 - Bloková data kolizí celé hlavní dimenze jsou nasazená. Tvary některých modovaných bloků zůstávají přibližné; mimo dostupná nebo odpovídající data může chůze používat přibližný terén.
 - Celosvětové exporty jsou dlouhé dávkové úlohy. První úplné průchody povrchu, jeskyní a kolizí jsou dokončené. Regiony pocházejí z různých okamžiků uložení hry. Aktualizace kolizí zatím prochází celý svět; není to okamžitá fronta změn.
-- Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je ROZDĚLANÝ: běží první celý render povrchu, kolizí a jeskyní; veřejné připojení ještě není hotové.
+- Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je ROZDĚLANÝ: povrch a kolizní export jsou dokončené soukromě (990 dlaždic), běží jeskynní vrstva. Veřejné připojení čeká na audit a náhled.
 - Speciální a animované renderery strojů, entity a všechny možné modové kombinace nejsou věrně simulovány.
 - Nová generace obsahuje opravy barev modovaných biomů a registru bloků. Experimentální části zdrojového kódu nemusí odpovídat nasazenému provozu.
 - Opravena byla chyba náhradních názvů chybějících ID: souřadnice ve zprávě o chybě mohly přepsat jiný, známý blok v registru. Přepočítaný povrch, jeskyně i odpovídající kolize jsou již nasazené.

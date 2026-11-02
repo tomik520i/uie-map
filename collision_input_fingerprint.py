@@ -7,6 +7,7 @@ Concurrent writes during reading, malformed chunks and missing biomes still fail
 import hashlib
 import json
 import os
+import time
 from pathlib import Path
 import reader
 import world_hires as wh
@@ -27,7 +28,20 @@ def chunk_digest(chunk):
     return h.digest()
 
 
+class ChangedDuringRead(ValueError):
+    pass
+
+
 def fingerprint(region_dir,area):
+    # Retrying a concurrent read repeats every check; corrupt input never retries.
+    for attempt in range(3):
+        try:return _fingerprint_once(region_dir,area)
+        except ChangedDuringRead:
+            if attempt==2:raise
+            time.sleep(.02*(attempt+1))
+
+
+def _fingerprint_once(region_dir,area):
     h=hashlib.sha256(b'UIE_COLLISION_RENDER_INPUT1')
     for rx,rz in wh._regions_of(area):
         path=Path(region_dir)/f'r.{rx}.{rz}.mca'
@@ -49,5 +63,5 @@ def fingerprint(region_dir,area):
             after=path.stat();stream.seek(0)
             if ((before.st_dev,before.st_ino,before.st_size,before.st_mtime_ns)!=
                 (after.st_dev,after.st_ino,after.st_size,after.st_mtime_ns) or stream.read(8192)!=header):
-                raise ValueError('region changed while reading renderer inputs')
+                raise ChangedDuringRead('region changed while reading renderer inputs')
     return h.hexdigest()

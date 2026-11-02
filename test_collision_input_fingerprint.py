@@ -43,6 +43,16 @@ class FingerprintTests(unittest.TestCase):
             return chunk
         with patch.object(f.reader,'decode_chunk',mutate):
             with self.assertRaisesRegex(ValueError,'changed while reading'):f.fingerprint(self.root,self.area)
+    def test_one_concurrent_write_retries_a_complete_read(self):
+        expected=self.write();decode=f.reader.decode_chunk;calls=[]
+        def mutate_once(root):
+            chunk=decode(root);calls.append(1)
+            if len(calls)==1:
+                with self.path.open('ab') as out:out.write(b'change')
+            return chunk
+        with patch.object(f.reader,'decode_chunk',mutate_once):
+            self.assertEqual(f.fingerprint(self.root,self.area),expected)
+        self.assertEqual(len(calls),2)
     def test_selected_halo_detects_neighbour_but_not_outside(self):
         self.area=wh.tile_area(1,1)[0]
         def write_at(cx):

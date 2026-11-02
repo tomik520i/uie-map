@@ -16,6 +16,7 @@ import uiemap_cave_gc
 import uiemap_collisions
 import uiemap_capacity
 import uiemap_modpack
+import modpack_rules
 
 
 def main(argv=None):
@@ -78,7 +79,10 @@ def main(argv=None):
     modpack.add_argument('--world',type=Path);modpack.add_argument('--include-blocks',action='store_true')
     modpack.add_argument('--namespace-map',type=Path)
     modpack.add_argument('--verify-block-textures',action='store_true')
+    rules=commands.add_parser('modpack-rules',help='Validate explicit metadata/face bindings against world and pinned JAR textures')
+    for name in ('mods','world','rules'):rules.add_argument('--'+name,required=True,type=Path)
     args=parser.parse_args(argv)
+    if args.command=='modpack-rules':return modpack_rules.main(['--mods',str(args.mods),'--world',str(args.world),'--rules',str(args.rules)])
     if args.command=='modpack':return uiemap_modpack.main(['--mods',str(args.mods)]+(['--include-textures'] if args.include_textures else [])+(['--world',str(args.world)] if args.world else [])+(['--include-blocks'] if args.include_blocks else [])+(['--namespace-map',str(args.namespace_map)] if args.namespace_map else [])+(['--verify-block-textures'] if args.verify_block_textures else []))
     if args.command=='check':return uiemap_config.main([str(args.config)])
     if args.command=='status':return uiemap_status.main([str(args.config)])

@@ -83,6 +83,47 @@ Přítomnost souboru `.png.mcmeta` se eviduje, jeho obsah ani animace se neinter
 
 Skutečná kontrola UIE: 27 139 blokových PNG kandidátů z 276 JARů za přibližně 12,4 sekundy. Ověřeno 27 066; 54 nevyhovělo přísné kontrole, 14 bylo prokládaných a 5 přesáhlo limity. Soukromý report obsahuje přesné názvy, do veřejného repozitáře se herní prostředky neukládají. Související sada: 41 testů na Ubuntu PASS.
 
+### Explicitní pravidla bloků a metadat
+
+Příkaz `modpack-rules` připraví ověřený plán vazeb pro konkrétní svět. **Ještě nevytváří atlas ani katalog použitelný pro render.** U každého pravidla přesně uvedete registry název, metadata, šest stěn a poskytovatele textury. Žádná jiná metadata se nezdědí z první varianty.
+
+```sh
+python uiemap.py modpack-rules --mods /cesta/mods --world /cesta/world --rules rules.json > bindings.json
+```
+
+Ukázková struktura `rules.json` (názvy i SHA nahraďte skutečnými údaji):
+
+```json
+{
+  "format": "UIEMAP_MODPACK_RULES1",
+  "textures": {
+    "stone": {
+      "archive": "ExampleMod.jar",
+      "entry": "assets/example/textures/blocks/stone.png",
+      "sha256": "SEM_PATRI_64_ZNAKU_SHA256_SKUTECNEHO_PNG"
+    }
+  },
+  "blocks": [{
+    "name": "ExampleMod:stone",
+    "metadata": [0, 2],
+    "model": "cube",
+    "opacity": "solid",
+    "faces": ["stone", "stone", "stone", "stone", "stone", "stone"],
+    "evidence": "Zde popište, jak jste ověřili tvar a přiřazení stěn."
+  }]
+}
+```
+
+SHA získáte z inventáře s `--verify-block-textures --include-textures`. Pořadí stěn je **dole, nahoře, sever, jih, západ, východ** (D U N S W E). Textury lze sdílet mezi pravidly; každá deklarovaná textura musí být použitá. Rozdílné stěny odkazují na rozdílné aliasy v `textures`.
+
+První verze přijímá pouze explicitně deklarované kostky s neprůhledností `solid` nebo vyřezávanou průhledností `cutout`. Podporuje jen ověřené čtvercové PNG bez souboru `.mcmeta`. Rozměry, SHA a PNG data se znovu kontrolují při každém spuštění. Konflikt mezi JARy řeší vaše konkrétní volba `archive`; program nepředpokládá pořadí načítání modů. Pravidlo nemůže odkazovat mimo složku modů.
+
+Číslo bloku se vždy vezme z registru zvoleného světa. Neznámé názvy, duplicitní JSON klíče, překrývající se metadata, chybějící stěny, změněné SHA či nepodporované PNG příkaz odmítne návratovým kódem `2`. Výstup uvádí `registrySha256` a deterministický `bindingSha256`, takže vazby pro různé registry nebo různé textury nelze zaměnit. Změna pořadí uvedených metadat nemění význam ani tento otisk.
+
+`state: bindings-validated` znamená ověřené odkazy, existenci v registru a vybraná PNG data. **Neznamená nezávisle ověřenou podobu bloku:** `tier: user-declared`, `modelSemanticsVerified: false`, `catalogReady: false`. Poznámka `evidence` je tvrzení autora pravidla. Program ji neprověřuje proti Java rendereru. Výstup navíc určuje `unlistedMetadataPolicy: fallback`; navazující adaptér nesmí toto omezení obejít.
+
+Ověřeno 51 souvisejícími testy na Ubuntu a technickou vazbou na skutečný registr a PNG UIE. Tento skutečný vzorek ověřil přenos ID a přiřazení zdroje, **nikoli správnost zvoleného tvaru**; produkční katalog se neměnil. Příkaz pouze čte, zápis `bindings.json` v ukázce provádí shell.
+
 ### Zbývající práce
 
 Z názvu PNG nejde obecně odvodit všechny bloky, jejich číselná ID ve světě, metadata, orientace ani přiřazení textur jednotlivým stěnám. Tyto informace a geometrie vlastních Java rendererů potřebují další mapování nebo adaptéry. Existující ověřená cesta je stále [import připraveného exportu do katalogu](KONFIGURACE.md).

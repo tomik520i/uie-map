@@ -10,7 +10,7 @@ Směřujeme k samostatnému programu s konfigurací světa, výběrem více dime
 
 Jednotný příkaz `python uiemap.py` už nabízí kontrolu konfigurace, import existujícího exportu do katalogu, render, stav, aktualizace, systemd timer a web. Nový `capacity` spočítá uložené chunky, odhadne geometrii z explicitního vzorku a volitelně změří skutečné obsazení výstupů včetně sdílených souborů. Začněte [instalačním postupem](INSTALACE.md) a [vzorem konfigurace](examples/config.json). Podrobnosti jsou v [KONFIGURACE.md](KONFIGURACE.md); stav jednotlivých dimenzí v [DIMENZE.md](DIMENZE.md). Import libovolného modpacku a úplná automatizace provozu stále čekají.
 
-Nový příkaz `python uiemap.py modpack --mods /cesta/mods` umí bez Minecraft klienta prohlédnout modové JARy, metadata a kandidáty textur. [Český návod a omezení](MODPACK.md). Inventář je hotový; automatický převod všech modelů a sestavení katalogu ze samotných JARů zatím hotové nejsou.
+Příkaz `python uiemap.py modpack --mods /cesta/mods` umí bez Minecraft klienta prohlédnout modové JARy, metadata a kandidáty textur, volitelně ověřit bloková PNG a propojit názvy s registrem světa. Nový `modpack-rules` ověřuje explicitní vazby konkrétních metadat a šesti stěn na zvolený JAR a SHA textury. [Český návod a omezení](MODPACK.md). Inventář a validace vazeb jsou hotové; automatický převod všech modelů a sestavení katalogu ze samotných JARů zatím hotové nejsou.
 
 ## Co už funguje
 

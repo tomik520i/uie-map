@@ -25,6 +25,23 @@ test('failed poll keeps counts as unconfirmed; absent configuration hides panel'
  assert.equal(collisionStatusPanel({kind:'unavailable',reason:'missing'},doc,now).description,null);
  assert.match(describeCollisionStatus(doc,now+1800000).text,/nelze potvrdit/);
 });
+test('split recovery exposes real work progress without leaking coordinates or claiming completion',()=>{
+ const doc=projectCollisionStatus({...input,totalWorkUnits:995,completedWorkUnits:30,splitRegions:[[1,-1]]});
+ assert.match(describeCollisionStatus(doc,now).text,/Obnova po menších částech: 30\/995/);
+ assert.doesNotMatch(JSON.stringify(doc),/splitRegions|activeRegion/);
+ assert.equal(doc.completedRegions,1);
+ const old=projectCollisionStatus(input);assert.equal(old.totalWorkUnits,undefined);
+ assert.doesNotMatch(describeCollisionStatus(old,now).text,/menších/);
+});
+test('inconsistent optional work counters are refused at both boundaries',()=>{
+ for(const extra of [{totalWorkUnits:995},{totalWorkUnits:995,completedWorkUnits:996},
+  {totalWorkUnits:995,completedWorkUnits:0},{totalWorkUnits:1,completedWorkUnits:1},
+  {totalWorkUnits:995,completedWorkUnits:1.5},
+  {state:'complete',completedRegions:932,totalWorkUnits:995,completedWorkUnits:994}]){
+  assert.throws(()=>projectCollisionStatus({...input,...extra}));
+  assert.equal(describeCollisionStatus({...projectCollisionStatus(input),...extra},now),null);
+ }
+});
 async function call(handler,method='GET',url='/data/collision-status.json'){
  const res={writeHead(code,headers){this.code=code;this.headers=headers;},end(body){this.body=body;}};
  return {...res,handled:await handler({method},res,url),...res};

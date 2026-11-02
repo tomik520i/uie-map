@@ -11,8 +11,15 @@ export function projectCollisionStatus(doc){
  if(!keys.every(k=>count(doc[k]))||doc.selectedRegions>doc.totalRegions||doc.reusedRegions>doc.completedRegions||
    doc.completedRegions+doc.failedRegions>doc.selectedRegions||doc.publishedTiles>90000)throw Error('counts');
  if(doc.state==='complete'&&(doc.failedRegions||doc.completedRegions!==doc.totalRegions||doc.selectedRegions!==doc.totalRegions))throw Error('completion');
+ const work={};
+ if(doc.totalWorkUnits!==undefined||doc.completedWorkUnits!==undefined){
+  if(!count(doc.totalWorkUnits)||!count(doc.completedWorkUnits)||doc.completedWorkUnits>doc.totalWorkUnits||
+    doc.totalWorkUnits<doc.selectedRegions||doc.completedWorkUnits<doc.completedRegions||
+    (doc.state==='complete'&&doc.completedWorkUnits!==doc.totalWorkUnits))throw Error('work counts');
+  Object.assign(work,{totalWorkUnits:doc.totalWorkUnits,completedWorkUnits:doc.completedWorkUnits});
+ }
  return {format:'UIE_COLLISION_PROGRESS1',state:doc.state,startedAt:doc.startedAt,updatedAt:doc.updatedAt,
-  finishedAt:timestamp(doc.finishedAt)?doc.finishedAt:null,...Object.fromEntries(keys.map(k=>[k,doc[k]])),
+  finishedAt:timestamp(doc.finishedAt)?doc.finishedAt:null,...Object.fromEntries(keys.map(k=>[k,doc[k]])),...work,
   // This endpoint is preparation only. Serving its files to walkers is a separate deployment.
   publishedPublicly:false};
 }

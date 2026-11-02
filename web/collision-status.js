@@ -14,6 +14,13 @@ export function describeCollisionStatus(doc,now=Date.now(),unverified=false){
  else {text=doc.state==='stopped-budget'?'Příprava blokových dat se zastavila na limitu místa.':
    doc.state==='interrupted'?'Příprava blokových dat byla přerušena.':'Příprava blokových dat zatím není kompletní.';tone='warn';}
  text+=` Dokončené oblasti: ${doc.completedRegions}/${doc.totalRegions}; chyby: ${doc.failedRegions}. Připravené dlaždice: ${doc.publishedTiles}/${doc.plannedTiles}.`;
+ if(doc.totalWorkUnits!==undefined||doc.completedWorkUnits!==undefined){
+  if(![doc.totalWorkUnits,doc.completedWorkUnits].every(v=>Number.isSafeInteger(v)&&v>=0&&v<=100000)||
+    doc.completedWorkUnits>doc.totalWorkUnits||doc.totalWorkUnits<doc.selectedRegions||doc.completedWorkUnits<doc.completedRegions||
+    (doc.state==='complete'&&doc.completedWorkUnits!==doc.totalWorkUnits))return null;
+  if(doc.totalWorkUnits>doc.selectedRegions)
+   text+=` Obnova po menších částech: ${doc.completedWorkUnits}/${doc.totalWorkUnits} dokončených úloh.`;
+ }
  const age=now-doc.updatedAt*1000;
  if(unverified||age< -30000||age>20*60*1000){text+=' Pokračování běhu teď nelze potvrdit.';tone='warn';}
  text+=' Dosavadní režim chůze zůstává dostupný.';

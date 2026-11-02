@@ -88,7 +88,12 @@ def accepted_updates(report, *, world, hires_store, tools):
     elif 'inputScope' in report:
         raise ValueError('unknown report input scope')
     source = report['source']
-    if (tools.fingerprint(Path(world)/'region', area) != source['after']
+    fingerprint=tools.fingerprint
+    if report.get('sourceFingerprint')=='render-inputs-v1':
+        if report.get('inputScope')!='tile-halo-v1':raise ValueError('renderer fingerprint requires tile scope')
+        fingerprint=tools.render_fingerprint
+    elif 'sourceFingerprint' in report:raise ValueError('unknown source fingerprint')
+    if (fingerprint(Path(world)/'region', area) != source['after']
             or ce.registry_sha256(tools.load_registry(world)) != source['registryAfter']):
         raise ValueError('region source changed before publication')
     current = tools.read_index(hires_store)

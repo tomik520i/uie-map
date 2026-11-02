@@ -212,6 +212,8 @@ class Toolkit:
         self._capture_batch, self._volume = modules['capture_batch'], modules['offline_volume'].Volume
         self.copy_regions = ce.copy_regions_bounded
         self.fingerprint = ce.content_fingerprint
+        from collision_input_fingerprint import fingerprint
+        self.render_fingerprint = fingerprint
         self.load_registry = ce.read_registry
         self.read_chunks = wh.read_chunks
         self.read_index = read_index
@@ -279,12 +281,16 @@ def probe_region(jx, jz, *, world, hires_store, scratch_root, tools, tiles=None,
     outside = [t for t in selected if t not in all_keys]
     scratch = None
     saved_registry = wh._W.get('registry', None)
+    fingerprint = tools.fingerprint
     try:
         if outside:
             raise ProbeError(f'tiles outside region {jx},{jz}: {outside}')
         if len(selected) == 1:
             area = input_area(jx, jz, selected)
             report['inputScope'] = 'tile-halo-v1'
+            if callable(getattr(tools,'render_fingerprint',None)):
+                fingerprint=tools.render_fingerprint
+                report['sourceFingerprint']='render-inputs-v1'
         visible = tools.read_index(hires_store)
         report['visible'] = {'indexSha256': visible['indexSha256'], 'atlasSha256': visible['atlasSha256'],
                              'identity': visible['identity'], 'planComplete': visible.get('planComplete')}
@@ -295,7 +301,7 @@ def probe_region(jx, jz, *, world, hires_store, scratch_root, tools, tiles=None,
         region_dir = Path(world) / 'region'
         registry = tools.load_registry(world)
         registry_sha = ce.registry_sha256(registry)
-        live_before = timed('fingerprintBefore', tools.fingerprint, region_dir, area)
+        live_before = timed('fingerprintBefore', fingerprint, region_dir, area)
         report['source'] = {'registrySha256': registry_sha, 'before': live_before}
         if disk_free(scratch_root) < min_free_bytes:
             raise ProbeError('free disk space below the minimum before copying')
@@ -305,7 +311,7 @@ def probe_region(jx, jz, *, world, hires_store, scratch_root, tools, tiles=None,
                        budget_bytes=budget_bytes, min_free_bytes=min_free_bytes, disk_free=disk_free)
         report['copy']['files'] = len(copies)
         report['copy']['bytes'] = sum(Path(p).stat().st_size for p in copies.values())
-        copied = timed('fingerprintCopy', tools.fingerprint, scratch, area)
+        copied = timed('fingerprintCopy', fingerprint, scratch, area)
         report['source']['copy'] = copied
         if copied != live_before:
             raise ProbeError('copied region content differs from the live content (changed during the copy)')
@@ -323,7 +329,7 @@ def probe_region(jx, jz, *, world, hires_store, scratch_root, tools, tiles=None,
                                                            pilot_store, on_match)
                 counts[entry['result']] = counts.get(entry['result'], 0) + 1
             del chunks
-        live_after = timed('fingerprintAfter', tools.fingerprint, region_dir, area)
+        live_after = timed('fingerprintAfter', fingerprint, region_dir, area)
         registry_after = ce.registry_sha256(tools.load_registry(world))
         report['source'].update(after=live_after, registryAfter=registry_after)
         if live_after != live_before or registry_after != registry_sha:

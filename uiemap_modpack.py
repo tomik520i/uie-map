@@ -1,7 +1,7 @@
 """Read-only inventory of Minecraft mod JAR metadata and texture entry names.
 
 Does not execute Java, extract archives, start Minecraft, or produce a render catalog.
-Texture bytes and CRCs are not read: an entry is a candidate, not a validated image.
+By default texture bytes are not read. Opt-in block PNG validation never proves models.
 """
 import argparse
 from collections import Counter,defaultdict
@@ -30,7 +30,7 @@ def metadata(raw):
     return rows
 
 
-def inspect_jar(path):
+def inspect_jar(path, *, verify_block_textures=False, texture_budget=None):
     path=Path(path)
     if path.is_symlink():raise ValueError('linked archive refused')
     fd=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0))
@@ -62,6 +62,12 @@ def inspect_jar(path):
                 if len(parts)>=5 and parts[0]=='assets' and parts[2]=='textures' and name.lower().endswith('.png'):
                     textures.append(dict(resource=parts[1]+':'+('/'.join(parts[3:]))[:-4],entry=name,
                                          bytes=info.file_size,block=parts[3] in ('blocks','block')))
+            if verify_block_textures:
+                import modpack_textures
+                if texture_budget is None:texture_budget={'bytes':0}
+                for texture in textures:
+                    if texture['block']:
+                        texture['validation']=modpack_textures.verify(archive,archive.getinfo(texture['entry']),seen,texture_budget)
         after=os.fstat(stream.fileno());named=path.lstat()
         identity=lambda s:(s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns)
         if identity(before)!=identity(after) or identity(after)!=identity(named) or stat.S_ISLNK(named.st_mode):
@@ -73,17 +79,22 @@ def inspect_jar(path):
                 warnings=warnings),textures
 
 
-def inventory(mods,*,include_textures=False,world=None,include_blocks=False,namespace_map=None):
+def inventory(mods,*,include_textures=False,world=None,include_blocks=False,namespace_map=None,verify_block_textures=False):
     if include_blocks and world is None:raise ValueError('--include-blocks requires --world')
     if namespace_map is not None and world is None:raise ValueError('--namespace-map requires --world')
     root=Path(mods).absolute()
     if root.resolve()!=root or not root.is_dir():raise ValueError('mods must be an existing non-linked directory')
     paths=sorted(p for p in root.iterdir() if p.suffix.lower()=='.jar')
     if len(paths)>MAX_JARS:raise ValueError('archive count limit exceeded')
-    rows=[];errors=[];resources=defaultdict(set);block_resources=defaultdict(set);total=0
+    rows=[];errors=[];resources=defaultdict(set);block_resources=defaultdict(set);total=0;texture_budget={'bytes':0}
     for path in paths:
         try:
-            row,textures=inspect_jar(path);total+=row['entries']
+            if verify_block_textures:
+                row,textures=inspect_jar(path,verify_block_textures=True,texture_budget=texture_budget)
+                import modpack_textures
+                row['blockTextureValidation']=modpack_textures.summary(textures)
+            else:row,textures=inspect_jar(path)
+            total+=row['entries']
             if total>MAX_TOTAL_ENTRIES:raise ValueError('total entry limit exceeded')
             for t in textures:
                 resources[t['resource']].add(path.name)
@@ -101,6 +112,15 @@ def inventory(mods,*,include_textures=False,world=None,include_blocks=False,name
                     'Texture candidates are not decoded or CRC-verified. Conflicts have no chosen load order.',
                     'Registry IDs, metadata variants, faces and Java-rendered models still need a catalog adapter.',
                     'Only top-level .jar files are inspected; nested archives and configuration files are not imported.'])
+    if verify_block_textures:
+        keys=('checked','verified','invalid','unsupported','limited','staticSquareCandidates','animationMetadataPresent')
+        counts={key:sum(row['blockTextureValidation'][key] for row in rows) for key in keys}
+        complete=not errors and counts['invalid']==counts['unsupported']==counts['limited']==0
+        result['blockTextureValidation']=dict(counts,complete=complete,reservedBytes=texture_budget['bytes'])
+        # The legacy field covers ALL textures, including items/GUI, so stays false.
+        if not complete:result['state']='partial'
+        result['limitations'][0]='JAR metadata and bounded block PNG validation; no Java or Minecraft execution.'
+        result['limitations'][1]='Only block PNG payloads are checked. No animation playback, face mapping or chosen conflict precedence.'
     if world is not None:
         import modpack_registry
         result['registry']=modpack_registry.compare(modpack_registry.read_registry(world),rows,block_resources,
@@ -115,9 +135,10 @@ def main(argv=None):
     parser.add_argument('--world',type=Path,help='Optional world root containing Forge level.dat')
     parser.add_argument('--include-blocks',action='store_true',help='Include registered IDs and texture name candidates; requires --world')
     parser.add_argument('--namespace-map',type=Path,help='Explicit JSON mapping of registry namespaces to texture namespaces')
+    parser.add_argument('--verify-block-textures',action='store_true',help='Read and validate bounded block PNG payloads without extraction')
     args=parser.parse_args(argv)
-    try:doc=inventory(args.mods,include_textures=args.include_textures,world=args.world,include_blocks=args.include_blocks,namespace_map=args.namespace_map)
+    try:doc=inventory(args.mods,include_textures=args.include_textures,world=args.world,include_blocks=args.include_blocks,namespace_map=args.namespace_map,verify_block_textures=args.verify_block_textures)
     except (OSError,ValueError) as error:parser.exit(2,str(error)+'\n')
-    print(json.dumps(doc,ensure_ascii=False,indent=2));return 0 if not doc['errors'] else 1
+    print(json.dumps(doc,ensure_ascii=False,indent=2));return 0 if doc['state']=='inventory-complete' else 1
 
 if __name__=='__main__':raise SystemExit(main())

@@ -1,6 +1,6 @@
 # Kontrola vlastního modpacku
 
-**HOTOVO / OVĚŘENO:** inventář modových JARů bez spuštění Minecraftu. **NEDOKONČENO:** automatické vytvoření renderovacího katalogu ze samotných JARů.
+**HOTOVO / OVĚŘENO:** inventář modových JARů, propojení s registrem světa a volitelná kontrola blokových PNG bez spuštění Minecraftu. **NEDOKONČENO:** automatické vytvoření renderovacího katalogu ze samotných JARů.
 
 Příkaz můžete spustit nad svou složkou `mods` na Windows nebo Linuxu:
 
@@ -62,6 +62,28 @@ Nahraďte ukázkové názvy skutečnými názvy své instalace. Levá strana mus
 Ověření na UIE: **6 300 registrovaných bloků ve 163 jmenných prostorech**, z toho **314 s přesným kandidátem podle názvu** bez dodatečného přiřazení. Zbytek není seznam nepodporovaných bloků; současný připravený katalog používá další informace, které tento inventář nenahrazuje.
 
 ## Co ještě chybí k importu
+
+### Kontrola obrazových dat
+
+Výchozí inventář zkoumá jen názvy textur. Pro kontrolu samotných blokových PNG použijte:
+
+```sh
+python uiemap.py modpack --mods /cesta/mods --verify-block-textures > textures-check.json
+```
+
+Lze kombinovat s `--world`, `--include-blocks`, `--namespace-map` a `--include-textures`. Program nic nerozbaluje na disk a neprovádí Java kód. Kontroluje ZIP CRC, PNG CRC, strukturu, délku rozbalených dat, řádkové filtry a u paletových obrázků také existenci odkazovaných barev. Podporuje neprokládané PNG: šedé 1/2/4/8/16bitové, paletové 1/2/4/8bitové, RGB i varianty s alfa kanálem 8/16bitové. Prokládané PNG zatím hlásí odděleně jako `unsupported`, nikoli jako poškozené.
+
+Souhrn `blockTextureValidation` obsahuje `checked`, `verified`, `invalid`, `unsupported`, `limited` a `complete`. U každého archivu je seznam `issues` s přesnou cestou, názvem prostředku a důvodem. S `--include-textures` jsou u úspěšných kontrol také rozměry, barevný typ, bitová hloubka a SHA-256. Stejná textura z více JARů se ověřuje v každém poskytovateli; pořadí modů se neodhaduje.
+
+`invalid` znamená odmítnutí přísnou PNG/ZIP kontrolou. Může jít i o jiný formát s příponou `.png` nebo přebytečné bajty za koncem PNG, které jiný prohlížeč toleruje. Neznamená to automaticky rozbitý mod. `unsupported` znamená omezení kontrolního nástroje. Při kterékoli neověřené položce je stav `partial` a návratový kód `1`; podrobnosti zůstanou ve výstupu.
+
+Limity jsou 4 MiB uložených PNG dat a 4 194 304 pixelů na obrázek, celkem 512 MiB deklarovaných PNG dat na jeden inventář. Nadlimitní položky se přeskočí s uvedeným důvodem. Kontrolují se pouze složky `blocks` a `block`, nikoli položky GUI či předmětů; proto obecné pole `texturePayloadsVerified` zůstává `false`. Přesnější výsledek je v `blockTextureValidation`.
+
+Přítomnost souboru `.png.mcmeta` se eviduje, jeho obsah ani animace se neinterpretují. `staticSquareCandidate` znamená pouze čtvercový ověřený obrázek bez tohoto souboru. **Nepotvrzuje přiřazení ke stěně bloku, skutečně statickou texturu, model ani hotový katalog.** Kontrola zatím nekonvertuje pixely do atlasu a neověřuje ostatní doprovodná PNG metadata.
+
+Skutečná kontrola UIE: 27 139 blokových PNG kandidátů z 276 JARů za přibližně 12,4 sekundy. Ověřeno 27 066; 54 nevyhovělo přísné kontrole, 14 bylo prokládaných a 5 přesáhlo limity. Soukromý report obsahuje přesné názvy, do veřejného repozitáře se herní prostředky neukládají. Související sada: 41 testů na Ubuntu PASS.
+
+### Zbývající práce
 
 Z názvu PNG nejde obecně odvodit všechny bloky, jejich číselná ID ve světě, metadata, orientace ani přiřazení textur jednotlivým stěnám. Tyto informace a geometrie vlastních Java rendererů potřebují další mapování nebo adaptéry. Existující ověřená cesta je stále [import připraveného exportu do katalogu](KONFIGURACE.md).
 

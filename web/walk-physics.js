@@ -212,8 +212,8 @@ export function createWalker({ shapeAt }) {
   };
   // Include the cell below for fences that extend above their owning cell. Unknown body cells are
   // never treated as a safe destination, even when the ground has already arrived.
-  const occupancy = () => {
-    const a = box(pos.x, pos.y, pos.z);
+  const occupancy = (position = pos) => {
+    const a = box(position.x, position.y, position.z);
     let unknown = false;
     let blocked = false;
     for (let cx = Math.floor(a[0]); cx <= Math.floor(a[3] - EPS); cx += 1) {
@@ -230,6 +230,45 @@ export function createWalker({ shapeAt }) {
     }
     return { unknown, blocked };
   };
+
+  // Entry-only search, never a per-frame recovery. All destinations are within two blocks
+  // in 3D, use real collision-box tops, and require known clearance and support at the feet.
+  function findNearbyGround() {
+    const origin = { ...pos }, candidates = [];
+    for (let x = Math.floor(origin.x - 2); x <= Math.floor(origin.x + 2); x++) {
+      for (let z = Math.floor(origin.z - 2); z <= Math.floor(origin.z + 2); z++) {
+        const px = x + .5, pz = z + .5;
+        const horizontal = (px-origin.x)**2 + (pz-origin.z)**2;
+        if (horizontal > 4) continue;
+        for (let y = Math.floor(origin.y - 2) - 1; y <= Math.floor(origin.y + 2); y++) {
+          const s = shape(x,y,z);
+          if (s?.kind !== 'solid') continue;
+          for (const b of s.boxes) {
+            if (.5 < b[0] || .5 > b[3] || .5 < b[2] || .5 > b[5]) continue;
+            const top = y+b[4], distance = horizontal+(top-origin.y)**2;
+            if (distance > 4 || top < 0 || top + BODY.height > 256) continue;
+            candidates.push({x:px,y:top,z:pz,distance});
+          }
+        }
+      }
+    }
+    candidates.sort((a,b)=>a.distance-b.distance || a.y-b.y || a.x-b.x || a.z-b.z);
+    for (const p of candidates) {
+      const status = occupancy(p);
+      if (status.unknown || status.blocked) continue;
+      const a = box(p.x,p.y,p.z);
+      let liquid = false;
+      for (let x=Math.floor(a[0]);x<=Math.floor(a[3]-EPS);x++) {
+        for (let z=Math.floor(a[2]);z<=Math.floor(a[5]-EPS);z++) {
+          for (let y=Math.floor(a[1]);y<=Math.floor(a[4]-EPS);y++) {
+            if (shape(x,y,z)?.kind === 'liquid') liquid = true;
+          }
+        }
+      }
+      if (!liquid) return {x:p.x,y:p.y,z:p.z};
+    }
+    return null;
+  }
 
   function reconcile() {
     waitingReason = null;
@@ -308,6 +347,7 @@ export function createWalker({ shapeAt }) {
     get inLiquid() { return inLiquid; },
     get waiting() { return waiting; },
     get waitingReason() { return waitingReason; },
+    findNearbyGround,
     place({ x, y, z }) {
       pos.x = x; pos.y = y; pos.z = z;
       vy = 0;

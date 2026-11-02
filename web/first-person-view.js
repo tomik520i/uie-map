@@ -194,12 +194,17 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
     walkRequested = next;
     if (next === walking) return;
     motion.clear();
+    let relocated = false;
     if (next) {
       const eye = { x: camera.position.x, y: camera.position.y - eyeHeight, z: camera.position.z };
       const suggested = walkStart?.(eye);
       walker.place(suggested ?? eye);
       // Recheck the camera if the surface suggestion landed inside terrain or unknown data.
       if (walker.waiting && suggested) walker.place(eye);
+      if (walker.waitingReason === 'embedded') {
+        const nearby = walker.findNearbyGround?.();
+        if (nearby) { walker.place(nearby); relocated = !walker.waiting; }
+      }
       if (walker.waiting) {
         onMessage(walker.waitingReason === 'unloaded'
           ? 'Chůzi zatím nelze zapnout: bloková data se ještě načítají nebo zde nejsou dostupná. Zůstáváte v létání; zkuste to znovu po načtení.'
@@ -212,7 +217,8 @@ export function createFirstPersonView({ camera, controls, canvas, window: win, d
       camera.updateMatrixWorld();
     }
     walking = next;
-    if (dragMode) onMessage(dragMessage(), 'info');
+    if (relocated) onMessage('Chůze začíná na volném místě s podlahou nejvýše dva bloky od původní pozice.', 'info');
+    else if (dragMode) onMessage(dragMessage(), 'info');
     else if (pauseShown) onMessage(pausedMessage(), 'info');
     else onMessage(null);
     onChange('walk');

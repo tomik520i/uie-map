@@ -114,6 +114,13 @@ test('G switches to walking: the body lands on the ground, the eye is 1.62 above
   assert.equal(noWalker.view.walking, false, 'walking needs a walker');
 });
 
+test('entry can move onto nearby supported ground but normal frames never search sideways', () => {
+  const walker=walkPhysics.createWalker({shapeAt:(x,y,z)=>walkPhysics.blockShape(y<64||(x===0&&z===0)?'stone':'air')});
+  const h=harness({walker});h.camera.position.set(.5,65.62,.5);h.view.enterFly();h.view.setWalking(true);
+  assert.equal(h.view.walking,true);assert.match(h.lastMessage(),/nejvýše dva bloky/);
+  assert.ok(Math.abs(h.camera.position.y-65.62)<1e-6);assert.notEqual(h.camera.position.x,.5);
+});
+
 test('buried entry stays in flight with unchanged camera and permits escape', () => {
   const walker = walkPhysics.createWalker({ shapeAt: (x,y) => walkPhysics.blockShape(y < 150 ? 'stone' : 'air') });
   const h = harness({walker});h.view.enterFly();h.view.requestLock();h.grant();

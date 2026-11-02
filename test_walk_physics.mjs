@@ -60,6 +60,37 @@ test('block shapes: solid default, plants passable, slabs, stairs, fences, liqui
   assert.equal(blockShape('SomeMod:unknownMachine').kind, 'solid', 'unknown modded block is a full cube');
 });
 
+test('nearby entry finds supported clearance beside a column without mutating the walker', () => {
+  const w=createWalker({shapeAt:(x,y,z)=>blockShape(y<64||(x===0&&z===0)?'stone':'air')});
+  w.place({x:.5,y:64,z:.5});const before=w.position;
+  const p=w.findNearbyGround();assert.ok(p);assert.equal(p.y,64);
+  assert.ok(Math.hypot(p.x-.5,p.y-64,p.z-.5)<=2);assert.deepEqual(w.position,before);
+  w.place(p);assert.equal(w.waiting,false);run(w,.2);assert.equal(w.position.y,64);
+});
+
+test('nearby search rejects unknown headroom, unsupported air and liquids', () => {
+  for(const kind of ['unknown','air','liquid']) {
+    const w=createWalker({shapeAt:(x,y,z)=>{
+      if(x===0&&z===0)return blockShape('stone');
+      if(kind==='unknown')return y<64?blockShape('stone'):undefined;
+      if(kind==='air')return blockShape('air');
+      return blockShape(y<64?'stone':'lava');
+    }});
+    w.place({x:.5,y:64,z:.5});assert.equal(w.findNearbyGround(),null,kind);
+  }
+});
+
+test('nearby search respects cave headroom, precise slab tops and the 3D radius', () => {
+  for(const ceiling of [66,65]) {
+    const w=createWalker({shapeAt:(x,y,z)=>blockShape(y<64||y>=ceiling||(x===0&&z===0)?'stone':'air')});
+    w.place({x:.5,y:64,z:.5});assert.equal(Boolean(w.findNearbyGround()),ceiling===66);
+  }
+  const slab=createWalker({shapeAt:(x,y,z)=>blockShape(x===0&&z===0?'stone':y===64?'stone_slab':y<64?'stone':'air')});
+  slab.place({x:.5,y:64,z:.5});assert.equal(slab.findNearbyGround().y,64.5);
+  const roof=createWalker({shapeAt:(x,y,z)=>blockShape(y<80?'stone':'air')});
+  roof.place({x:.5,y:64,z:.5});assert.equal(roof.findNearbyGround(),null,'never climb to a distant roof');
+});
+
 test('falls onto the ground and stands still', () => {
   const w = createWalker({ shapeAt: world() });
   w.place({ x: 0.5, y: 70, z: 0.5 });

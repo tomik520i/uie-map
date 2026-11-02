@@ -122,7 +122,7 @@ První verze přijímá pouze explicitně deklarované kostky s neprůhledností
 
 `state: bindings-validated` znamená ověřené odkazy, existenci v registru a vybraná PNG data. **Neznamená nezávisle ověřenou podobu bloku:** `tier: user-declared`, `modelSemanticsVerified: false`, `catalogReady: false`. Poznámka `evidence` je tvrzení autora pravidla. Program ji neprověřuje proti Java rendereru. Výstup navíc určuje `unlistedMetadataPolicy: fallback`; navazující adaptér nesmí toto omezení obejít.
 
-Ověřeno 51 souvisejícími testy na Ubuntu a technickou vazbou na skutečný registr a PNG UIE. Tento skutečný vzorek ověřil přenos ID a přiřazení zdroje, **nikoli správnost zvoleného tvaru**; produkční katalog se neměnil. Příkaz pouze čte, zápis `bindings.json` v ukázce provádí shell.
+Ověřeno 52 souvisejícími testy na Ubuntu a technickou vazbou na skutečný registr a PNG UIE. Tento skutečný vzorek ověřil přenos ID a přiřazení zdroje, **nikoli správnost zvoleného tvaru**; produkční katalog se neměnil. Příkaz pouze čte, zápis `bindings.json` v ukázce provádí shell. Obrazová data čte pouze pro vybrané položky, takže nesouvisející textury ve stejném archivu nevyčerpají jejich rozpočet. Strukturu a bezpečnost názvů archivu kontroluje celou.
 
 ### Zbývající práce
 

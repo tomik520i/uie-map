@@ -30,7 +30,7 @@ def metadata(raw):
     return rows
 
 
-def inspect_jar(path, *, verify_block_textures=False, texture_budget=None):
+def inspect_jar(path, *, verify_block_textures=False, texture_budget=None, texture_entries=None):
     path=Path(path)
     if path.is_symlink():raise ValueError('linked archive refused')
     fd=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0))
@@ -66,7 +66,7 @@ def inspect_jar(path, *, verify_block_textures=False, texture_budget=None):
                 import modpack_textures
                 if texture_budget is None:texture_budget={'bytes':0}
                 for texture in textures:
-                    if texture['block']:
+                    if texture['block'] and (texture_entries is None or texture['entry'] in texture_entries):
                         texture['validation']=modpack_textures.verify(archive,archive.getinfo(texture['entry']),seen,texture_budget)
         after=os.fstat(stream.fileno());named=path.lstat()
         identity=lambda s:(s.st_dev,s.st_ino,s.st_size,s.st_mtime_ns)

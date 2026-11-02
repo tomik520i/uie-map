@@ -1,6 +1,8 @@
 import contextlib,copy,hashlib,io,json,tempfile,unittest,zipfile
 from pathlib import Path
 import modpack_rules as rules
+from unittest.mock import patch
+import modpack_textures
 import png_io
 from test_reader import level_dat
 
@@ -97,6 +99,13 @@ class RuleTests(unittest.TestCase):
         (self.mods/'sample.jar').write_bytes(b'bad')
         with contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit) as err:uiemap.main(args)
         self.assertEqual(err.exception.code,2)
+
+    def test_unselected_textures_do_not_consume_selection_budget(self):
+        with zipfile.ZipFile(self.mods/'sample.jar','w') as z:
+            z.writestr(self.entry.replace('stone','unselected'),self.raw)
+            z.writestr(self.entry,self.raw)
+        with patch.object(modpack_textures,'MAX_TOTAL_TEXTURE_BYTES',len(self.raw)):
+            self.assertEqual(self.inspect()['state'],'bindings-validated')
 
 
 if __name__=='__main__':unittest.main()

@@ -75,7 +75,8 @@ def inspect(mods,world,rules):
     if len(selected)>128:raise ValueError('At most 128 selected archives')
     indexed={}; budget={'bytes':0}
     for name in sorted(selected):
-        _,textures=uiemap_modpack.inspect_jar(root/name,verify_block_textures=True,texture_budget=budget)
+        entries={ref['entry'] for ref in doc['textures'].values() if ref['archive']==name}
+        _,textures=uiemap_modpack.inspect_jar(root/name,verify_block_textures=True,texture_budget=budget,texture_entries=entries)
         indexed[name]={t['entry']:t for t in textures}
     bound={}
     for alias,ref in sorted(doc['textures'].items()):

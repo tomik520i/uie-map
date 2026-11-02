@@ -55,7 +55,7 @@ Volitelný `--measure-output` navíc změří existující výstupy povrchu, kol
 
 Bez `--sample-store` nevymýšlí sazbu. S publikovaným vzorkem stejného režimu načte ověřený index a změří velikosti odkazované geometrie. Neprovádí úplné hashování payloadů (`payloadHashesVerified: false`). Výsledný JSON uvádí scénář jedné generace, zvoleného počtu generací bez sdílení a dvojnásobné hustoty. **Dvojnásobek není garantovaná horní mez.** Pro jeskyně použijte konfiguraci v režimu `caves` a jeskynní vzorek; povrchový vzorek je odmítnut.
 
-Nezahrnuje atlas, metadata, kolize, uzávěry řezů, pracovní soubory, zálohy ani provozní rezervu. Čas a RAM z velikosti geometrie neodhaduje. Nether je v reportu výslovně nepodporovaný; ostatní neprázdné dimenze potřebují skutečné ověření renderu. Úspěšný inventář není potvrzení podpory modpacku.
+Nezahrnuje atlas, metadata, kolize, uzávěry řezů, pracovní soubory, zálohy ani provozní rezervu. Čas a RAM z velikosti geometrie neodhaduje. Nether už není v reportu označený jako neimplementovaný; všechny neprázdné dimenze potřebují skutečné ověření renderu. Úspěšný inventář není potvrzení podpory modpacku.
 
 Aktuální příklad sedmi dalších dimenzí vývojového světa:
 
@@ -107,3 +107,12 @@ Společné obsazení uvedených výstupů při tomto měření: **588.26 MiB**. 
 <!-- MEASURED EXPANSION END -->
 
 DIM84 byla 29. 10. znovu přepočítána s opraveným katalogem. Geometrické velikosti v tabulce odpovídají této nové generaci; časový sloupec zachovává první původní běh. Přítomná historie obou generací zvětšuje celkové obsazení výstupu i při menší aktuální geometrii.
+
+
+## První povrch Netheru (2. 11. 2026)
+
+Inventář zachytil **39 regionových souborů, 14235 uložených chunků a 990 obsazených dlaždic**. Dokončená soukromá povrchová publikace má 990 dlaždic a **87,009,282 B ≈ 82.98 MiB geometrie**, průměrně 85.83 KiB na dlaždici. První povrchový průchod trval **42.81 min** při jednom pracovníku.
+
+Pro samotnou geometrii by dvě celé nesdílené generace při stejné hustotě představovaly 165.96 MiB; při dvojnásobné hustotě 331.91 MiB. Jsou to scénáře, nikoli horní meze. Nezahrnují kolize, jeskyně, atlasy, historii metadat ani pracovní rezervu.
+
+Toto měření čte ověřený index a velikosti odkazovaných souborů; znovu nehashuje každý payload. Plný audit všech vrstev a veřejné připojení Netheru v okamžiku tohoto zápisu ještě čekají na dokončení jeskyní. Čas povrchu tedy není čas dokončení celé dimenze. Nether obsahuje přirozený strop a jeho prohlížení bude standardně používat jeskynní řez; samotná stropní geometrie není odhadem složitosti podzemí.

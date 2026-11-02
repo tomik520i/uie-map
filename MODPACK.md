@@ -126,6 +126,31 @@ Ověřeno 52 souvisejícími testy na Ubuntu a technickou vazbou na skutečný r
 
 ### Zbývající práce
 
+#### Atlas z explicitních pravidel — hotový samostatný výstup
+
+Po přípravě pravidel lze vytvořit nový atlas přímo z vybraných JAR textur, bez klienta a bez knihoven třetích stran:
+
+```sh
+# Nejprve náhled: provede kontrolu a výpočet, nic nezapíše.
+python uiemap.py modpack-atlas --mods /cesta/mods --world /cesta/world --rules rules.json --out /cesta/novy-atlas
+# Vytvořit novou oddělenou složku:
+python uiemap.py modpack-atlas --mods /cesta/mods --world /cesta/world --rules rules.json --out /cesta/novy-atlas --apply
+```
+
+Vzniknou `atlas.png`, `atlas.json`, `bindings.json` a `report.json`. PNG je RGBA8; layout obsahuje přesné souřadnice, UV a SHA zdrojových i převedených obrázků. Kolem každé textury je jeden pixel opakovaného okraje, aby se při filtrování nemíchala se sousední texturou. Obrázky se nepřeskalují. Výstup je deterministický pro stejné vazby a prostředky.
+
+Převod podporuje stejné neprokládané formáty jako kontrola PNG: palety, průhlednost `tRNS`, nízké bitové hloubky šedé a 8/16bitové barvy s alfa kanálem. Průhlednost se vyhodnocuje před redukcí 16bitových hodnot na horní bajt. Barevné vzorky se zachovávají bez gamma/ICC transformace. Animace a prokládané PNG zatím nejsou podporované.
+
+Pravidlo `solid` s jakýmkoli neúplně neprůhledným pixelem je odmítnuté; `cutout` průhlednost zachová. Název nebo SHA vybrané textury se znovu kontroluje i při čtení po validaci pravidel. Nesouvisející soubory se neexportují.
+
+Výstupní složka musí být nová, mimo svět i mody a bez symbolických odkazů v cestě. Rodičovská složka musí existovat. Existující atlas se nepřepisuje. Zápis proběhne do soukromé dočasné složky a zveřejní se až po dokončení; při chybě se vlastní rozpracovaná složka uklidí. Limity první verze: 256 vybraných textur, dohromady 4 194 304 zdrojových pixelů a atlas nejvýše 4096 × 4096. Jednoduché balení používá buňky podle největší textury; velké rozdíly velikostí mohou vyžadovat rozdělení pravidel.
+
+**Stále nejde o katalog pro renderer:** layout má vlastní formát `UIEMAP_RULE_ATLAS1`, `catalogReady` zůstává `false`. Nekopírujte tyto soubory přes produkční katalog. Navazující modelový adaptér musí zachovat přesná metadata a chybějící varianty jako fallback. Tvar bloku a správnost textur stěn jsou nadále tvrzením autora pravidla.
+
+Ověřeno 67 souvisejícími testy na Ubuntu, včetně pixelových hodnot, PNG filtrů, průhlednosti, okrajů, různých rozměrů, změny zdroje a úklidu po chybě zápisu. Soukromý skutečný atlas z UIE prošel opětovným načtením PNG a kontrolou pixelových SHA každé vložené textury. Produkční mapa se tím nemění.
+
+#### Co navazuje na atlas
+
 Z názvu PNG nejde obecně odvodit všechny bloky, jejich číselná ID ve světě, metadata, orientace ani přiřazení textur jednotlivým stěnám. Tyto informace a geometrie vlastních Java rendererů potřebují další mapování nebo adaptéry. Existující ověřená cesta je stále [import připraveného exportu do katalogu](KONFIGURACE.md).
 
 Na UIE byl inventář ověřen 2. listopadu 2026 na **276 JAR souborech**, **73 707 kandidátech textur**, z toho **27 139 blokových**, se **4 konflikty názvů**. Jde o jednu konkrétní sadu modů; počty nevyjadřují počet podporovaných bloků. Testy pokrývají i poškozené archivy, limity, chybějící metadata, konflikty, nebezpečné cesty a CLI. Herní prostředky ani tento produkční inventář nejsou součástí repozitáře.

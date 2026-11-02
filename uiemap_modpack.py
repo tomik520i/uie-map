@@ -73,23 +73,27 @@ def inspect_jar(path):
                 warnings=warnings),textures
 
 
-def inventory(mods,*,include_textures=False):
+def inventory(mods,*,include_textures=False,world=None,include_blocks=False,namespace_map=None):
+    if include_blocks and world is None:raise ValueError('--include-blocks requires --world')
+    if namespace_map is not None and world is None:raise ValueError('--namespace-map requires --world')
     root=Path(mods).absolute()
     if root.resolve()!=root or not root.is_dir():raise ValueError('mods must be an existing non-linked directory')
     paths=sorted(p for p in root.iterdir() if p.suffix.lower()=='.jar')
     if len(paths)>MAX_JARS:raise ValueError('archive count limit exceeded')
-    rows=[];errors=[];resources=defaultdict(set);total=0
+    rows=[];errors=[];resources=defaultdict(set);block_resources=defaultdict(set);total=0
     for path in paths:
         try:
             row,textures=inspect_jar(path);total+=row['entries']
             if total>MAX_TOTAL_ENTRIES:raise ValueError('total entry limit exceeded')
-            for t in textures:resources[t['resource']].add(path.name)
+            for t in textures:
+                resources[t['resource']].add(path.name)
+                if t['block']:block_resources[t['resource']].add(path.name)
             if include_textures:row['textures']=textures
             rows.append(row)
         except (OSError,ValueError,zipfile.BadZipFile,zipfile.LargeZipFile) as error:
             errors.append(dict(file=path.name,error=str(error)[:300]))
             if total>MAX_TOTAL_ENTRIES:break
-    return dict(format='UIEMAP_MODPACK_INVENTORY1',readOnly=True,state='partial' if errors else 'inventory-complete',
+    result=dict(format='UIEMAP_MODPACK_INVENTORY1',readOnly=True,state='partial' if errors else 'inventory-complete',
                 archivesFound=len(paths),archivesInspected=len(rows),archives=rows,errors=errors,
                 textureConflicts=[dict(resource=k,archives=sorted(v)) for k,v in sorted(resources.items()) if len(v)>1],
                 catalogReady=False,texturePayloadsVerified=False,
@@ -97,12 +101,22 @@ def inventory(mods,*,include_textures=False):
                     'Texture candidates are not decoded or CRC-verified. Conflicts have no chosen load order.',
                     'Registry IDs, metadata variants, faces and Java-rendered models still need a catalog adapter.',
                     'Only top-level .jar files are inspected; nested archives and configuration files are not imported.'])
+    if world is not None:
+        import modpack_registry
+        result['registry']=modpack_registry.compare(modpack_registry.read_registry(world),rows,block_resources,
+            include_blocks=include_blocks,archive_scan_complete=not errors,
+            namespace_map=modpack_registry.load_namespace_map(namespace_map) if namespace_map is not None else None)
+    return result
 
 
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--mods',required=True,type=Path)
-    parser.add_argument('--include-textures',action='store_true');args=parser.parse_args(argv)
-    try:doc=inventory(args.mods,include_textures=args.include_textures)
+    parser.add_argument('--include-textures',action='store_true')
+    parser.add_argument('--world',type=Path,help='Optional world root containing Forge level.dat')
+    parser.add_argument('--include-blocks',action='store_true',help='Include registered IDs and texture name candidates; requires --world')
+    parser.add_argument('--namespace-map',type=Path,help='Explicit JSON mapping of registry namespaces to texture namespaces')
+    args=parser.parse_args(argv)
+    try:doc=inventory(args.mods,include_textures=args.include_textures,world=args.world,include_blocks=args.include_blocks,namespace_map=args.namespace_map)
     except (OSError,ValueError) as error:parser.exit(2,str(error)+'\n')
     print(json.dumps(doc,ensure_ascii=False,indent=2));return 0 if not doc['errors'] else 1
 

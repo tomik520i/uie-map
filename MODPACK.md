@@ -32,6 +32,35 @@ Samotný nástroj pouze čte. Zápis do souboru v druhém příkladu provádí p
 
 Návratový kód je `0` při dokončeném inventáři, `1` při částečném výsledku a `2` při chybě vstupních parametrů. Nečitelná metadata jednotlivého modu jsou uvedena ve `warnings`; sama nezakazují prohlédnout názvy jeho textur.
 
+## Porovnání s bloky konkrétního světa
+
+Volitelně přidejte kořen světa obsahující Forge `level.dat` (nikoli adresář `DIM-1`):
+
+```sh
+python uiemap.py modpack --mods /cesta/mods --world /cesta/world
+python uiemap.py modpack --mods /cesta/mods --world /cesta/world --include-blocks > modpack-registry.json
+```
+
+Report doplní skutečná číselná ID a názvy registrovaných bloků, souhrn po jmenných prostorech a kandidátní textury se shodným názvem. Bez `--include-blocks` vrací jen souhrn. Položky registru neznamenají, že se všechny tyto bloky ve světě skutečně nacházejí; chunky tento příkaz neprochází. Z `level.dat` nezveřejňuje hráčská data ani jiné údaje mimo registr bloků.
+
+`blocksWithNameCandidates` je počet bloků s texturou odpovídající přesnému názvu `namespace:blocks/jmeno` nebo `namespace:block/jmeno`. **Není to počet vykreslitelných ani ověřeně podporovaných bloků.** Přiřazení stěn, metadata a geometrie zůstávají neověřené (`mappingVerified: false`). Rozdíly velikosti písmen uvádí odděleně a automaticky je nepřiřazuje. Neúplný průchod archivy poznáte podle `archiveScanComplete: false`.
+
+Chybějící shoda neznamená chybějící mod. Mod může používat jiný název pro prostředky, sdílet textury s jiným modulem nebo je získávat jinak. Základní textury Minecraftu také obvykle nejsou v adresáři `mods`.
+
+Pokud znáte správné přiřazení, lze ho zadat v samostatném JSON souboru, například:
+
+```json
+{"ExampleMod": "exampleassets"}
+```
+
+```sh
+python uiemap.py modpack --mods /cesta/mods --world /cesta/world --namespace-map namespaces.json --include-blocks
+```
+
+Nahraďte ukázkové názvy skutečnými názvy své instalace. Levá strana musí existovat v registru; překlepy, duplicitní klíče a neplatné hodnoty příkaz odmítne. Report zachová původní názvy bloků a ukáže `textureNamespace` a `namespaceMappingExplicit`. Ani ručně přiřazený jmenný prostor sám nepotvrzuje model nebo správnost textury.
+
+Ověření na UIE: **6 300 registrovaných bloků ve 163 jmenných prostorech**, z toho **314 s přesným kandidátem podle názvu** bez dodatečného přiřazení. Zbytek není seznam nepodporovaných bloků; současný připravený katalog používá další informace, které tento inventář nenahrazuje.
+
 ## Co ještě chybí k importu
 
 Z názvu PNG nejde obecně odvodit všechny bloky, jejich číselná ID ve světě, metadata, orientace ani přiřazení textur jednotlivým stěnám. Tyto informace a geometrie vlastních Java rendererů potřebují další mapování nebo adaptéry. Existující ověřená cesta je stále [import připraveného exportu do katalogu](KONFIGURACE.md).

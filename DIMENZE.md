@@ -1,6 +1,6 @@
 # Dimenze — rozpoznání, render a webový přepínač
 
-**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je ROZDĚLANÝ: běží první celý render povrchu, kolizí a jeskyní; veřejné připojení ještě není hotové.
+**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je od 3. 11. **HOTOVÝ / VEŘEJNĚ NASAZENÝ**: všech 39 uložených regionových souborů, 990 povrchových dlaždic a odpovídající kolizní i jeskynní data prošly auditem. Výchozí řez ve výšce 96 otevře pohled pod strop. Dvě samostatné 30min aktualizační fronty jsou zapnuté; první přepočet pěti změněných oblastí právě probíhá, jeho dokončení ještě není potvrzené.
 
 ```sh
 python world_layout.py /cesta/k/vlastnimu/svetu
@@ -83,12 +83,13 @@ Vstupem serveru zůstává `node server.mjs`; tento soubor je kompatibilní i s 
 
 
 <!-- CURRENT EXPANSION START -->
-## Aktuální nasazení dalších dimenzí (29. 10.)
+## Aktuální nasazení dalších dimenzí (3. 11.)
 
-Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je ROZDĚLANÝ: běží první celý render povrchu, kolizí a jeskyní; veřejné připojení ještě není hotové.
+Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je od 3. 11. **HOTOVÝ / VEŘEJNĚ NASAZENÝ**: všech 39 uložených regionových souborů, 990 povrchových dlaždic a odpovídající kolizní i jeskynní data prošly auditem. Výchozí řez ve výšce 96 otevře pohled pod strop. Dvě samostatné 30min aktualizační fronty jsou zapnuté; první přepočet pěti změněných oblastí právě probíhá, jeho dokončení ještě není potvrzené.
 
 | Dimenze | Veřejných dlaždic | Povrch / kolize / jeskyně |
 | --- | ---: | --- |
+| −1 (Nether) | 990 | **HOTOVO / NASAZENO** |
 | 42 | 161 | **HOTOVO / NASAZENO** |
 | 80 | 138 | **HOTOVO / NASAZENO** |
 | 81 | 48 | **HOTOVO / NASAZENO** |
@@ -109,3 +110,11 @@ Pro mod s vlastnostmi bloků závislými na dimenzi lze nově vybrat samostatný
 DIM84 používá od 29. 10. samostatný profil šesti krystalových bloků OreSpawn, jejichž vlastnost neprůhlednosti závisí na dimenzi. Povrch, kolize a jeskyně byly přepočítány společně a všech 161 dlaždic a párů nezávisle ověřeno. Atlas zůstává původní: krystalové textury samy obsahují průhledné pixely a z dálky mohou působit zrnitě. Přesná shoda se spuštěnou hrou zatím nebyla ověřena.
 
 Veřejný prohlížeč ověřil přepínání a jeskynní řezy i chůzi na jednom místě. Od 1. 11. se chůze v prokazatelně obsazené nebo nenačtené pozici nezapne a ponechá létání s vysvětlením. Pokus zároveň vyžádá dostupná bloková data; po načtení lze přepnutí zopakovat. Pokud postavu uzavřou až později načtená data, vrátí se ovládání na létání. Od 2. 11. se při vstupu z obsazeného místa hledá také blízká volná pozice: nejvýše dva bloky ve 3D, s načtenými daty, pevnou podlahou a místem pro celé tělo. Hledání respektuje půlbloky, odmítá kapaliny a neprobíhá během běžné chůze. Pokud v tomto malém okolí nic nenajde, zůstane létání. Přesnost závisí na dostupných kolizních tvarech modů. Tento test nepotvrzuje správnost všech modovaných kolizních tvarů.
+
+## Nether: pohled pod stropem
+
+[Veřejný Nether](https://mcinfo.opicebot.cz/map/uie/dimensions/d-1bad6b8cf97131fceab8/) se otevře s řezem96. Výšku lze změnit ovladačem nebo URL `?cut=48`; `?cut=off` ukáže povrch bedrockového stropu. Šedé plochy jsou uzávěry řezu pevnou hmotou, nikoli chybějící textura krajiny. Prohlížeč načítá jen okolí kamery a postupně uvolňuje vzdálená data.
+
+Soukromý i veřejný prohlížeč ověřil načtení podzemí a uzávěrů, řez48, vypnutí řezu a návrat do hlavního světa bez přenesení Nether nastavení. Blokové kolize byly ověřené i přes skutečné veřejné HTTP požadavky při vypnutém řezu. Při zapnutém jeskynním řezu používá pohyb přibližné kolize geometrie; přesná shoda všech modovaných tvarů ani chůze celou dimenzí ověřená není. Polohy hráčů pro Nether nejsou připojené.
+
+Původní render i samostatný audit všech990párů dokončeny bez chyb. Audit ověřil publikované soubory a stabilní ukazatele, nikoli shodu s živým světem v libovolném pozdějším okamžiku; k tomu slouží průběžné přepočty. Aktualizační interval se počítá od dokončení běhu; běh jedné služby se nepřekrývá sám se sebou. Povrchová a jeskynní fronta mohou běžet současně. Herní server ani Minecraft klient nejsou při této publikaci restartované/spouštěné.

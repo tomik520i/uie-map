@@ -154,3 +154,26 @@ Ověřeno 67 souvisejícími testy na Ubuntu, včetně pixelových hodnot, PNG f
 Z názvu PNG nejde obecně odvodit všechny bloky, jejich číselná ID ve světě, metadata, orientace ani přiřazení textur jednotlivým stěnám. Tyto informace a geometrie vlastních Java rendererů potřebují další mapování nebo adaptéry. Existující ověřená cesta je stále [import připraveného exportu do katalogu](KONFIGURACE.md).
 
 Na UIE byl inventář ověřen 2. listopadu 2026 na **276 JAR souborech**, **73 707 kandidátech textur**, z toho **27 139 blokových**, se **4 konflikty názvů**. Jde o jednu konkrétní sadu modů; počty nevyjadřují počet podporovaných bloků. Testy pokrývají i poškozené archivy, limity, chybějící metadata, konflikty, nebezpečné cesty a CLI. Herní prostředky ani tento produkční inventář nejsou součástí repozitáře.
+
+
+## Explicitní katalog pro mesher — hotová samostatná část
+
+`python uiemap.py modpack-catalog --source ./atlas --out ./explicit-catalog`
+nejprve pouze ověří vstup a připraví přehled. S `--apply` vytvoří nový samostatný
+adresář obsahující `model-catalog.json`, `atlas.png` a `report.json`; existující
+výstup nepřepisuje. Vstupem je výstup příkazu `modpack-atlas`.
+
+Katalog obsahuje jen přesně vyjmenovaná metadata. Chybějící varianty mají vlastní
+neprůhlednou náhradní texturu; nedědí první variantu bloku. Pravidla kostek jsou
+uživatelská tvrzení, proto zůstávají v diagnostice jako předpokládané modely.
+Platná textura ani úspěšný test nepotvrzují správný tvar bloku ve hře.
+
+Python API `ExplicitCatalog.load(cesta, registr)` ověřuje celý registr světa,
+identity JSON/PNG, stěny a neprůhlednost. Výsledek lze předat `offline_mesher.Mesher`.
+Ověřeno 76 testy na Ubuntu a vytvořením geometrie ze skutečného atlasu a registru
+UIE; záměrně nepopsaná metadata byla označena jako fallback.
+
+**Zbývá napojení na dávkový renderer, konfiguraci a publikování celého světa.**
+Report proto uvádí `mesherReady: true`, ale `batchRendererReady: false`.
+Nejde ještě o kompletní automatický import libovolného modpacku; podporovány jsou
+explicitní kostky solid/cutout, nikoli obecné speciální renderery modů.

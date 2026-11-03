@@ -18,6 +18,7 @@ import uiemap_capacity
 import uiemap_modpack
 import modpack_rules
 import modpack_atlas
+import explicit_catalog
 
 
 def main(argv=None):
@@ -85,7 +86,10 @@ def main(argv=None):
     atlas=commands.add_parser('modpack-atlas',help='Build a separate RGBA atlas from explicit modpack rules; not a model catalog')
     for name in ('mods','world','rules','out'):atlas.add_argument('--'+name,required=True,type=Path)
     atlas.add_argument('--apply',action='store_true')
+    explicit=commands.add_parser('modpack-catalog',help='Build a separate explicit cube catalog for Mesher; batch pipeline not yet integrated')
+    explicit.add_argument('--source',required=True,type=Path);explicit.add_argument('--out',required=True,type=Path);explicit.add_argument('--apply',action='store_true')
     args=parser.parse_args(argv)
+    if args.command=='modpack-catalog':return explicit_catalog.main(['--source',str(args.source),'--out',str(args.out)]+(['--apply'] if args.apply else []))
     if args.command=='modpack-atlas':return modpack_atlas.main(['--mods',str(args.mods),'--world',str(args.world),'--rules',str(args.rules),'--out',str(args.out)]+(['--apply'] if args.apply else []))
     if args.command=='modpack-rules':return modpack_rules.main(['--mods',str(args.mods),'--world',str(args.world),'--rules',str(args.rules)])
     if args.command=='modpack':return uiemap_modpack.main(['--mods',str(args.mods)]+(['--include-textures'] if args.include_textures else [])+(['--world',str(args.world)] if args.world else [])+(['--include-blocks'] if args.include_blocks else [])+(['--namespace-map',str(args.namespace_map)] if args.namespace_map else [])+(['--verify-block-textures'] if args.verify_block_textures else []))

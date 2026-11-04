@@ -18,7 +18,9 @@ export function createBlockPicker({base,createFollower=createCollisionFollower,t
         };
         try {
           source=createFollower({base,onChange:check,onError:()=>finish(null)});
-          source.update({walking:true,x:cell.x,z:cell.z,geometryAt,atlasSha});check();
+          // A factory may report a synchronous error before returning its source.
+          if(done){source.dispose();return;}
+          source.update({walking:true,lookupOnly:true,x:cell.x,z:cell.z,geometryAt,atlasSha});check();
         } catch { finish(null); }
       });
     },

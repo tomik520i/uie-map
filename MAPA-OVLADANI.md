@@ -19,3 +19,7 @@ Výběr je dostupný také v samostatných dimenzích. Přesná bloková identit
 Novější ověřená světová publikace, která pokrývá všechny dlaždice starého detailu spawnu, vyřadí starý detail i jeho bloková data pro chůzi. Průběžná aktualizace jiných regionů nevrací říjnový detail na obrazovku. Pokud nová publikace dosud neobsahuje potřebné dlaždice nebo ji nelze ověřit, samotné stáří názvu souboru nestačí k přepnutí.
 
 Poloha hráčů je poslední uložená poloha, nikoli živý pohyb. Podpora modovaných modelů a kolizí zůstává neúplná; diagnostika ukazuje konkrétní náhradní modely a jejich výskyty.
+
+### Výběr při aktualizaci a v řezu
+
+Změna řezu zavře předchozí detail. Pokud se během načítání změní vybraná geometrie, mapa požádá o nový výběr. Kliknutí na šedý uzávěr označí pomocnou plochu řezu; pro výběr stěny nebo podlahy uzávěry vypněte. Podzemní plochy zatím poskytují texturu a souřadnice, nikoli přesné ID a metadata. Dohledání povrchového bloku načítá pouze jednu blokovou dlaždici a nemění datové okolí pro chůzi.

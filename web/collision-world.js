@@ -33,10 +33,11 @@ export function createCollisionWorld({base,indexHash,fetcher=fetch,onChange=()=>
     }
     const wanted=new Set();
     if(index && view?.walking && Number.isFinite(view.x) && Number.isFinite(view.z)) {
-      // Eight blocks of look-ahead. At most 2x2 tiles, at most 12 MiB resident block fields.
+      // Picking needs one tile, walking needs eight blocks of look-ahead.
+      const margin=view.lookupOnly===true?0:8;
       const candidates=[];
-      for(let z=Math.floor((view.z-8)/64);z<=Math.floor((view.z+8)/64);z++)
-        for(let x=Math.floor((view.x-8)/64);x<=Math.floor((view.x+8)/64);x++){
+      for(let z=Math.floor((view.z-margin)/64);z<=Math.floor((view.z+margin)/64);z++)
+        for(let x=Math.floor((view.x-margin)/64);x<=Math.floor((view.x+margin)/64);x++){
           const key=`${x},${z}`;
           if(index.has(key))candidates.push({key,x,z,d:(x*64+32-view.x)**2+(z*64+32-view.z)**2});
         }

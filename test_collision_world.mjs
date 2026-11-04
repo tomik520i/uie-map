@@ -21,6 +21,16 @@ function fixture(){
  return {files,calls,indexHash:hash(index),fetcher};
 }
 const view={walking:true,x:0,z:0,geometryAt:()=> 'b'.repeat(12),atlasSha:'a'.repeat(64)};
+test('picking at a four-tile boundary fetches only the selected tile; walking still prefetches',async()=>{
+ const f=fixture(),w=createCollisionWorld({base:'/',...f});
+ try {
+  await w.loadIndex();w.update({...view,lookupOnly:true});await flush();
+  assert.equal(w.resident,1);assert.equal(w.bytes,3*1024*1024);
+  assert.equal(f.calls.filter(u=>u.includes('/pairs/')).length,1);
+  assert.equal(w.blockAt(0,64,0).name,'minecraft:air');assert.equal(w.blockAt(-1,64,-1),undefined);
+  w.update(view);await flush();assert.equal(w.resident,4);
+ }finally{w.dispose();}
+});
 test('four boundary tiles, negative coordinates, bounded memory, no orbit/fly downloads',async()=>{
  const f=fixture(),w=createCollisionWorld({base:'/',...f});
  try{

@@ -28,3 +28,8 @@ test('timeout, explicit cancel and errors free pending lookups',async()=>{
  const c=h.picker.lookup(cell,view);h.sources[2].callbacks.onError();assert.equal(await c,null);
  assert.deepEqual(h.sources.map(s=>s.disposed),[1,1,1]);
 });
+test('synchronous factory failure still disposes the returned source',async()=>{
+ let disposed=0,updated=0;
+ const picker=createBlockPicker({base:'/',createFollower:({onError})=>{onError();return {dispose(){disposed++;},update(){updated++;}};}});
+ assert.equal(await picker.lookup(cell,view),null);assert.equal(disposed,1);assert.equal(updated,0);
+});

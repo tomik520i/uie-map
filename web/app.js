@@ -985,6 +985,7 @@ function showPick({ cell = null, block = null, message = null, warn = false }) {
 
 function closePick() {
   blockPicker?.cancel();
+  state.pickTileKey = null;
   state.pickSeq += 1;  // any pending lookup is now stale
   $('pick').hidden = true;
 }
@@ -1033,6 +1034,7 @@ async function lookupBlock({ x, y, z }) {
 function pickAt(clientX, clientY) {
   blockPicker ??= createBlockPicker({base:`${DATA_URL}collision/`});
   blockPicker.cancel();
+  state.pickTileKey = null;
   const rect = renderer.domElement.getBoundingClientRect();
   const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
   pickRaycaster.setFromCamera(ndc, camera);
@@ -1040,13 +1042,18 @@ function pickAt(clientX, clientY) {
   pickRaycaster.far = camera.far;
   const seq = ++state.pickSeq;
   // With the height cut on, geometry above the plane is invisible and must not be picked.
-  const hit = firstVisibleHit(pickRaycaster.intersectObjects([...state.pickTargets, ...hiresPickTargets()], false), state.cut);
+  const caps=state.cut===null?[]:[...capMeshes.values(),...worldCaveMeshes.values()].filter(mesh=>mesh.visible);
+  const hit = firstVisibleHit(pickRaycaster.intersectObjects([...state.pickTargets, ...hiresPickTargets(), ...caps], false), state.cut);
   if (!hit || !hit.face) {
     showPick({ message: 'Kliknutí nezasáhlo vykreslený terén.', warn: true });
     return;
   }
   const normal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).normalize();
   const cell = pickCell(hit.point, normal, pickRaycaster.ray.direction);
+  if(caps.includes(hit.object)) {
+    showPick({cell,message:'Uzávěr výškového řezu: pomocná plocha uvnitř terénu, nikoli textura bloku. Pro výběr skutečné stěny nebo podlahy uzávěry vypni.',warn:false});
+    return;
+  }
   if (hit.object.userData.hires) {
     // Whole-world tiles carry no block ids: name the texture of the face and give the coordinates.
     const uv = hit.uv ? hit.uv.clone() : null;
@@ -1057,24 +1064,35 @@ function pickAt(clientX, clientY) {
       return;
     }
     showPick({ cell, message: 'Načítám…' });
+    // Pin the hit BEFORE any async work. A replacement with the same atlas is still a different surface.
+    const key=`${Math.floor(cell.x/64)},${Math.floor(cell.z/64)}`;
+    state.pickTileKey=key;
+    const entry=hires.tiles.get(key),geometry=entry?.sha,atlas=visibleHiresAtlasSha();
+    const cut=state.cut,sourceBase=hires.sourceBase;
     const pickedLayout = HIRES_IMMUTABLE ? hires.index?.context?.layoutSha256 : null;
+    const isCurrent=()=>seq===state.pickSeq && state.cut===cut && hires.sourceBase===sourceBase
+      && hires.tiles.get(key)===entry && entry?.meshes.includes(hit.object)
+      && entry?.sha===geometry && visibleHiresAtlasSha()===atlas
+      && (!HIRES_IMMUTABLE || pickedLayout===hires.index?.context?.layoutSha256);
+    const stale=()=>{if(seq===state.pickSeq)showPick({cell,message:'Mapa nebo výškový řez se změnily; vyber blok znovu.'});};
     loadHiresSprites().then(async (spriteAt) => {
       if (seq !== state.pickSeq) return;
-      if(HIRES_IMMUTABLE && pickedLayout!==hires.index?.context?.layoutSha256){
-        showPick({cell,message:'Mapa se aktualizovala; vyber blok znovu.'});return;
-      }
+      if(!isCurrent()){stale();return;}
       const sprite = spriteAt && uv ? spriteAt(uv.x, uv.y) : null;
       showPick({ cell, block: { name: sprite ? `textura: ${sprite}` : 'neznámá textura', id: '–', meta: '–' },
         message: 'Tento výběr určuje texturu plochy a souřadnice, ne přesné ID a metadata bloku.' });
-      if(state.cut!==null || !HIRES_IMMUTABLE || state.mapView?.collisions===false)return;
+      if(cut!==null){
+        showPick({cell,block:{name:sprite?`textura: ${sprite}`:'neznámá textura',id:'–',meta:'–'},
+          message:'Podzemní plocha: dostupná je textura a souřadnice. Přesné ID a metadata vyžadují bloková data stejné podzemní generace; povrchová data zde nepoužívám.'});return;
+      }
+      if(!HIRES_IMMUTABLE || state.mapView?.collisions===false)return;
       const textureBlock={name:sprite?`textura: ${sprite}`:'neznámá textura',id:'–',meta:'–'};
       showPick({cell,block:textureBlock,message:'Ověřuji ID a metadata bloku…'});
-      const key=`${Math.floor(cell.x/64)},${Math.floor(cell.z/64)}`,geometry=hires.tiles.get(key)?.sha,atlas=visibleHiresAtlasSha();
-      const isCurrent=()=>seq===state.pickSeq && state.cut===null && hires.tiles.get(key)?.sha===geometry && visibleHiresAtlasSha()===atlas;
       const block=await blockPicker.lookup(cell,{atlasSha:atlas,geometryAt:k=>k===key&&isCurrent()?geometry:undefined,isCurrent});
       if(block && isCurrent())showPick({cell,block,message:'Blok z ověřených dat stejné verze jako vykreslená plocha.'});
       else if(isCurrent())showPick({cell,block:textureBlock,message:'Odpovídající bloková data nejsou dostupná; zobrazuji pouze texturu plochy.'});
-    });
+      else stale();
+    }).catch(()=>{if(isCurrent())showPick({cell,message:'Podrobnosti bloku nelze načíst. Zkus výběr znovu.',warn:true});else stale();});
     return;
   }
   showPick({ cell, message: 'Načítám bloková data…' });
@@ -1304,6 +1322,7 @@ function scheduleHiresPanel() {
 function dropHires(key) {
   const entry = hires.tiles.get(key);
   if (!entry) return;
+  if(state.pickTileKey===key)closePick();
   for (const mesh of entry.meshes) { scene.remove(mesh); mesh.geometry.dispose(); }
   hires.bytes -= entry.bytes;
   for (const c of entry.chunks) hires.chunks.delete(c);
@@ -1923,6 +1942,7 @@ function configureCut() {
   if (!state.cutWired) {
     state.cutWired = true;
     const update = () => {
+      closePick();
       slider.dataset.touched = '1';
       state.cut = $('opt-cut').checked ? Number.parseInt(slider.value, 10) : null;
       showCut();
@@ -1930,7 +1950,7 @@ function configureCut() {
     };
     $('opt-cut').addEventListener('change', update);
     slider.addEventListener('input', update);
-    $('opt-cut-cap').addEventListener('change', scheduleCutCaps);
+    $('opt-cut-cap').addEventListener('change', () => {closePick();scheduleCutCaps();});
   }
   showCut();
   applyDisplayOptions();

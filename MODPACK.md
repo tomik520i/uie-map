@@ -201,3 +201,24 @@ Druhý skutečný modpack, jeho speciální tvary a dlouhodobý update cyklus zb
 tento nový formát zatím nepodporuje.
 Nejde ještě o kompletní automatický import libovolného modpacku; podporovány jsou
 explicitní kostky solid/cutout, nikoli obecné speciální renderery modů.
+
+
+### Aktualizace a bloková data s explicitním katalogem
+
+Konfigurované `update --apply --collisions --collision-gc --gc` podporuje nový
+katalog: povrch se publikuje, potom se ověří shoda geometrie a exportují bloková
+data kolizí. Autoritativní Forge registr se vždy čte z kořene světa i pro další
+dimenze. Neznámá metadata zůstávají fallback; tvar speciálních modovaných bloků
+není tímto ověřen. Na web lze data připojit pomocí `serve --collisions`.
+
+Na soukromém syntetickém světě byl ověřen celý update přes systemd, export jedné
+kolizní dlaždice a úklid. Povrch i jeskyně zvládly změnu Anvil regionu, opakovaný
+průchod bez renderování nezměněného regionu a odmítnutí poškozeného atlasu při
+zachování poslední publikace. Index může změnit hash kvůli času kontroly; soubory
+nezměněné geometrie a atlasu se znovu používají. Detekce změn povrchu vychází
+z hlaviček Anvil včetně časových značek chunků; externí editor musí aktualizovat
+tyto značky. Změna samotného payloadu se zachovanou hlavičkou tímto není pokrytá.
+
+81 cílených testů na Ubuntu a 22 testů na Windows prošlo. Jednotlivé průchody
+nejsou dlouhodobý zátěžový test; druhý skutečný modpack a přesné speciální tvary
+zůstávají otevřené.

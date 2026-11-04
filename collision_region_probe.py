@@ -87,6 +87,8 @@ def surface_identity(catalog_identity: str, code: bytes) -> str:
 def _read_bounded(path: Path, limit: int, what: str) -> bytes:
     """Bytes of a regular, non-symlink file of 1..limit bytes that did not change while it was read."""
     try:
+        if not stat.S_ISREG(path.lstat().st_mode):
+            raise ProbeError(f'{what} is not a regular file (links refused)')
         fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0))
     except FileNotFoundError:
         raise ProbeError(f'{what} is missing') from None
@@ -187,8 +189,9 @@ class Toolkit:
     `modules` (capture_batch, offline_catalog, offline_mesher, offline_volume) and `code_dir` exist only for tests;
     normally the imported modules must live next to world_hires.py, whose bytes define the identity."""
 
-    def __init__(self, catalog_dir: Path, *, modules=None, code_dir=None, read_index=read_visible):
+    def __init__(self, catalog_dir: Path, *, modules=None, code_dir=None, read_index=read_visible, registry=None):
         self._catalog_dir = Path(catalog_dir)
+        self._explicit_registry = registry
         if modules is None:
             import capture_batch
             import offline_catalog
@@ -201,14 +204,24 @@ class Toolkit:
             if Path(modules[name].__file__).resolve().parent != here:
                 raise ProbeError(f'{name} is not imported from {here}: renderer identity unknown')
         offline_catalog, offline_mesher = modules['offline_catalog'], modules['offline_mesher']
-        catalog = offline_catalog.Catalog.load_compiled(Path(catalog_dir) / 'catalog.json')
         code = wh.MAGIC + b''.join((here / n).read_bytes()
                                    for n in ('offline_mesher.py', 'offline_catalog.py', 'offline_volume.py'))
+        if (Path(catalog_dir)/'model-catalog.json').exists():
+            import explicit_catalog
+            if Path(explicit_catalog.__file__).resolve().parent!=here:raise ProbeError('Explicit catalog code is from a different directory')
+            if registry is None:raise ProbeError('Explicit catalog requires the authoritative world registry')
+            if (Path(catalog_dir)/'catalog.json').exists():raise ProbeError('Ambiguous catalog: both legacy and explicit models')
+            catalog=explicit_catalog.ExplicitCatalog.load(catalog_dir,registry)
+            assets=catalog.atlas_assets(catalog_dir)
+            code+=(here/'explicit_catalog.py').read_bytes()
+            colormap=None
+            self.atlas=hashlib.sha256(assets['atlas.png']).hexdigest()
+        else:
+            catalog = offline_catalog.Catalog.load_compiled(Path(catalog_dir) / 'catalog.json')
+            colormap=offline_mesher.Colormap(Path(catalog_dir)/'grass.png',Path(catalog_dir)/'foliage.png')
+            self.atlas = hashlib.sha256((Path(catalog_dir) / 'atlas.png').read_bytes()).hexdigest()
         self.identity = surface_identity(catalog.identity, code)
-        self.atlas = hashlib.sha256((Path(catalog_dir) / 'atlas.png').read_bytes()).hexdigest()
-        self._mesher = offline_mesher.Mesher(catalog, offline_mesher.Colormap(Path(catalog_dir) / 'grass.png',
-                                                                              Path(catalog_dir) / 'foliage.png'),
-                                             caves=False)
+        self._mesher = offline_mesher.Mesher(catalog, colormap, caves=False)
         self._capture_batch, self._volume = modules['capture_batch'], modules['offline_volume'].Volume
         self.copy_regions = ce.copy_regions_bounded
         self.fingerprint = ce.content_fingerprint
@@ -228,7 +241,7 @@ class Toolkit:
 
     def fresh(self):
         """Independent worker state for a conservative retry; all normal identity/SHA gates still apply."""
-        return Toolkit(self._catalog_dir, read_index=self.read_index)
+        return Toolkit(self._catalog_dir, read_index=self.read_index,registry=self._explicit_registry)
 
 
 def _rect_keys(rect):

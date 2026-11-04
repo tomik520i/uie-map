@@ -45,7 +45,10 @@ def make_tools(work):
     import collision_export as export
     class DimensionToolkit(probe.Toolkit):
         def __init__(self):
-            super().__init__(Path(work['catalog']),read_index=lambda store:probe.read_visible(store,world=work['world'],dimension=work['dimension']))
+            options={}
+            if (Path(work['catalog'])/'model-catalog.json').exists():
+                options['registry']=export.read_registry(Path(work['worldPath']))
+            super().__init__(Path(work['catalog']),read_index=lambda store:probe.read_visible(store,world=work['world'],dimension=work['dimension']),**options)
             # DIM*/level.dat is not the authoritative mod registry.
             self.load_registry=lambda unused_region_world:export.read_registry(Path(work['worldPath']))
         def fresh(self):return DimensionToolkit()

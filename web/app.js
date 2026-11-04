@@ -852,7 +852,7 @@ function gotoHeight(x, z) {
 }
 
 function resetCamera() {
-  if (state.mapView && state.areas?.length) { visitArea(state.defaultArea ?? state.areas[0]); return; }
+  if (state.mapView && state.mapView.format !== 'UIE_MAP_VIEW4' && state.areas?.length) { visitArea(state.defaultArea ?? state.areas[0]); return; }
   cancelPendingGoto();
   const { min, max } = state.bounds;
   const [cx, cy, cz] = state.mapView ? state.focus : [0, 1, 2].map((i) => (min[i] + max[i]) / 2);
@@ -931,7 +931,7 @@ function refreshAreas(index) {
   $('area-summary').textContent=`Celá publikace: ${index.tiles.size} dlaždic v ${state.areas.length} oddělených oblastech. `
     +(state.areas.length>200?'Nabídka obsahuje 200 největších. ':'')
     +'Dlaždice mohou obsahovat neuložené chunky; počty načteného okolí výše nejsou celá mapa.';
-  if(state.mapView && !state.areaInitialized) {
+  if(state.mapView && state.mapView.format !== 'UIE_MAP_VIEW4' && !state.areaInitialized) {
     state.areaInitialized=true;
     const [x,,z]=state.focus;
     state.defaultArea=[...state.areas].sort((a,b)=>(a.x-x)**2+(a.z-z)**2-((b.x-x)**2+(b.z-z)**2))[0];
@@ -1717,17 +1717,25 @@ function startPlayers() {
 }
 
 async function startOverview() {
-  if (await loadOverviewBuild()) {
+  let loading = false;
+  const refresh = async () => {
+    if (loading) return;
+    loading = true;
+    try {
+    if (!await loadOverviewBuild()) return;
     const far = wholeWorldDistance(overview.index);
     controls.maxDistance = Math.max(controls.maxDistance, far * 1.6);
     camera.far = Math.max(camera.far, far * 5);
     camera.updateProjectionMatrix();
     $('opt-overview').disabled = false;
     $('overview-note').hidden = false;
+    $('overview-note').textContent = 'Hrubý výškový přehled vzdálené krajiny (1 bod = 1 až mnoho bloků podle oddálení). Blízké okolí překrývají podrobné dlaždice; barvy přehledu jsou přibližné.';
     updateOverview();
-  }
+    } finally { loading = false; }
+  };
+  await refresh();
   // A newer build replaces the tiles in place: old tiles stay until the new set around the camera is loaded.
-  setInterval(async () => { if (overview.index && await loadOverviewBuild()) updateOverview(); }, OVERVIEW_POLL_MS);
+  setInterval(refresh, OVERVIEW_POLL_MS);
 }
 
 // Load the published overview pointer and index; true if a (new) build is now active.
@@ -2815,15 +2823,21 @@ function startStandaloneView(view) {
   const { min, max } = view.bounds;
   $('bounds').previousElementSibling.textContent = `Dimenze ${view.dimension}`;
   $('bounds').textContent = `X ${min[0]} … ${max[0]} · Z ${min[2]} … ${max[2]} · Y ${min[1]} … ${max[1]}`;
-  $('render').hidden = true;
+  $('render').hidden = view.status !== true;
+  $('legacy-detail-status').hidden = true;
   $('cov-rendered').closest('section').hidden = true;
-  for (const id of ['opt-overview', 'opt-players']) $(id).disabled = true;
-  $('opt-overview').checked = false;
-  $('streaming-note').textContent = 'Počty načtených dlaždic platí pro okolí kamery, nikoli celou dimenzi. Vzdálenější terén se uvolňuje z paměti; tato dimenze nemá hrubý vzdálený přehled. Mapa zobrazuje pouze uložené chunky. Chybějící chunky mohou vytvořit mezery a svislé okraje terénu.';
+  $('opt-overview').disabled = view.overview !== true;
+  $('opt-players').disabled = view.players !== true;
+  if (!view.overview) $('opt-overview').checked = false;
+  if (!view.players) $('opt-players').checked = false;
+  $('streaming-note').textContent = 'Počty načtených dlaždic platí pro okolí kamery, nikoli celou dimenzi. Vzdálenější terén se uvolňuje z paměti; '
+    +(view.overview ? 'vzdálenou krajinu zobrazuje hrubý přehled. ' : 'tato dimenze nemá hrubý vzdálený přehled. ')
+    +'Mapa zobrazuje pouze uložené chunky. Chybějící chunky mohou vytvořit mezery a svislé okraje terénu.';
   if (!WORLD_CAVES) for (const id of ['opt-cut','cut-level','opt-cut-cap']) $(id).disabled=true;
   const note = document.createElement('p'); note.className = 'note';
   note.textContent = `Dimenze ${view.dimension}. ${WORLD_CAVES?(view.dimension==='-1'?'Nether se otevírá ve výškovém řezu pod stropem; výšku lze změnit.':'Jeskyně jsou připojené; zapni výškový řez.'):'Jeskyně nejsou připojené.'} `
-    +(view.collisions?'Bloková data chůze jsou připojená; tvary některých modů zůstávají přibližné.':'Bloková data chůze nejsou připojená; chůze používá přibližnou geometrii.')+' Polohy hráčů nejsou připojené.';
+    +(view.collisions?'Bloková data chůze jsou připojená; tvary některých modů zůstávají přibližné.':'Bloková data chůze nejsou připojená; chůze používá přibližnou geometrii.')
+    +(view.players?' Polohy hráčů odpovídají poslednímu uloženému stavu.':' Polohy hráčů nejsou připojené.');
   $('bounds').closest('section').append(note);
   const cutHelp=$('opt-cut-cap').closest('label').nextElementSibling;
   if(cutHelp) cutHelp.textContent=WORLD_CAVES
@@ -2834,6 +2848,13 @@ function startStandaloneView(view) {
   startFlyMode();
   if (WORLD_CAVES) configureCut();
   if (view.collisions) startCollisionPilot();
+  if (view.status) {
+    startHiresStatus();
+    if (view.collisions) startCollisionPreparationStatus();
+    if (view.overview) startOverviewStatus();
+  }
+  if (view.overview) startOverview();
+  if (view.players) startPlayers();
   applyDisplayOptions();
   setStatus('loading', 'Načítám povrch dimenze…');
   startHires();

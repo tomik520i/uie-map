@@ -37,3 +37,13 @@ Nové samostatné 30min fronty DIM84: povrch + kolize + úklid a jeskyně + úkl
 Celý první přepočet: povrch 231,06 s, kolize 319,66 s, jeskyně 291,91 s, celkem 14,04 min. Po prvním update je 90,44 MiB unikátně alokovaných výstupních souborů (87,68 MiB logicky). Bez katalogu, kódu, zdrojového světa, staré publikace a adresářových metadat. Jde o měření této uložené oblasti, nikoli obecný odhad dalších světů.
 
 ČEKÁ: ověření průhlednosti CrystalStone/Grass, vodorovné varianty kmene, přesná ID v jeskyních. Univerzální import a distribuce zůstávají rozpracované.
+
+## 5. listopadu 2026 — přímé načítání světa: HOTOVO / NASAZENO
+
+Hlavní mapa nyní začíná přímo z aktuální světové publikace. Ke spuštění už nepotřebuje historický manifest, atlas ani detailní chunky spawnu. Zůstávají přehled vzdálené krajiny, hráči, kolize, jeskyně a stav aktualizací. Nový kontrakt UIE_MAP_VIEW4 výslovně deklaruje overview/players/status; starší dimenze zachovávají dosavadní schopnosti. Kamera respektuje nakonfigurované ohnisko, nepřeskočí na střed obrovské propojené oblasti.
+
+Opravena obnova přehledu po prvním neúspěšném načtení: další pravidelný pokus jej nyní načte; souběžné dotazy se neduplikují a větší nová publikace rozšíří dosah kamery. Popis přehledu už nemluví o starém detailním vzorku.
+
+Ověřeno: 561 Node testů PASS, 2 SKIP; soukromý hlavní povrch, jeskyně Y48 s 15/15 uzávěry, DIM84 24/24 dlaždic; veřejný povrch 15/15 a jeskyně 15/15, konzole bez chyb. Přehled a hráči dostupní přes HTTP200. Test vstupní funkce zakazuje dotaz na starou revizi při explicitním map-view. Úplný regresní test chůze ani časové zrychlení startu nebyly měřeny.
+
+ČEKÁ: přesná jeskynní ID, zvláštní modované modely, druhý modpack a čistý OS. Průhlednost CrystalStone/Grass není označena za opravenou: textura kamene skutečně obsahuje 174/256 průhledných pixelů; mod mění okluzi podle dimenze. Plošné odstranění alpha není podložená oprava.

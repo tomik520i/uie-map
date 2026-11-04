@@ -129,3 +129,10 @@ Nové samostatné 30min fronty DIM84: povrch + kolize + úklid a jeskyně + úkl
 Celý první přepočet: povrch 231,06 s, kolize 319,66 s, jeskyně 291,91 s, celkem 14,04 min. Po prvním update je 90,44 MiB unikátně alokovaných výstupních souborů (87,68 MiB logicky). Bez katalogu, kódu, zdrojového světa, staré publikace a adresářových metadat. Jde o měření této uložené oblasti, nikoli obecný odhad dalších světů.
 
 ČEKÁ: ověření průhlednosti CrystalStone/Grass, vodorovné varianty kmene, přesná ID v jeskyních. Univerzální import a distribuce zůstávají rozpracované.
+
+
+### Přímý start hlavního světa (UIE_MAP_VIEW4)
+
+Stejný samostatný prohlížeč lze použít i pro hlavní svět. Verze 4 přidává povinné booleany `overview`, `players`, `status` k polím verze 3 (`caves`, `collisions`, identita, název, hranice, ohnisko). Schopnosti se nezapínají podle čísla dimenze. `focus` zůstává výchozím místem kamery; nabídka oblastí je stále dostupná ručně.
+
+Pro server nastavte `UIE_MAP_VIEW_FILE`, `UIE_HIRES_STORE`, podle potřeby kolizní a jeskynní úložiště, a vyprázdněte `UIE_GENERATION_STORE`. Přehled a hráči potom potřebují explicitní `UIE_OVERVIEW_STORE` a `UIE_PLAYERS_FILE`; bez generačního úložiště se jejich cesty neodvozují. Uvedené booleany pouze připojují již existující data — žádná data negenerují. Konfigurovaný chybějící nebo neplatný map-view odpoví chybou, nikdy jiným starým světem. Automatický generátor konfigurace zatím vydává dosavadní omezenou verzi 3.

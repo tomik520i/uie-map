@@ -162,6 +162,12 @@
         <label>Z <input id="goto-z" type="number" inputmode="numeric" step="1" autocomplete="off" disabled></label>
         <button id="goto-submit" type="submit" class="btn btn-accent" disabled>Přesunout</button>
       </form>
+      <div id="map-areas" hidden>
+        <label for="area-select">Uložené oblasti</label>
+        <select id="area-select"></select>
+        <button id="area-go" type="button" class="btn">Zobrazit oblast</button>
+        <p id="area-summary" class="note"></p>
+      </div>
       <p id="goto-msg" class="note" hidden></p>
       <div class="row">
         <button id="reset" type="button" class="btn" disabled>Resetovat kameru</button>

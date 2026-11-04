@@ -12,7 +12,7 @@ function boot(dimension,requested=null,caves=true){
  const state={cutRequest:requested},calls=[];
  const context={state,HIRES_IMMUTABLE:true,WORLD_CAVES:true,DataError:Error,initialDimensionCut,cutRange,parseCutParam,
   document:{createElement:element},$:id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id);},
-  resetCamera(){},enableNavigation(){},startFlyMode(){},startCollisionPilot(){},applyDisplayOptions(){},showCut(){},scheduleCutCaps(){},setStatus(){},
+  ensurePicking(){},resetCamera(){},enableNavigation(){},startFlyMode(){},startCollisionPilot(){},applyDisplayOptions(){},showCut(){},scheduleCutCaps(){},setStatus(){},
   startHires(){calls.push(state.cut);}};
  vm.runInNewContext(configure+'\n'+bootstrap+'\nstartStandaloneView(view);',vm.createContext({...context,view:{world:'test',dimension,title:'test',caves,bounds:{min:[0,0,0],max:[64,256,64]},focus:[32,80,32]}}));
  return {state,calls,elements};

@@ -6,11 +6,12 @@ import {canRetireDetail,publishedBounds} from './web/world-primary.js';
 const identity={world:'uie',dimension:'0'}, date='2026-10-08T12:00:00Z';
 const chunks=[{x:-1,z:0},{x:0,z:0}];
 const index=()=>({immutable:true,context:{...identity,caves:false},source:{planComplete:true,producerFinishedAt:Date.parse('2026-11-04')/1000},tileSize:64,tiles:new Map([['-1,0','a'],['0,0','b']])});
-test('retire only a newer complete matching world covering every detail chunk',()=>{
+test('retire only a newer matching world covering every detail chunk, including rolling updates',()=>{
  assert.equal(canRetireDetail(index(),identity,date,chunks),true);
  const cave=index();cave.context.caves=true;assert.equal(canRetireDetail(cave,identity,date,chunks),true);
+ const rolling=index();rolling.source.planComplete=false;assert.equal(canRetireDetail(rolling,identity,date,chunks),true);
  for(const mutate of [i=>i.immutable=false,i=>i.context.world='other',i=>i.context.dimension='42',i=>delete i.context.caves,
-  i=>i.source.planComplete=false,i=>i.source.producerFinishedAt=Date.parse(date)/1000,i=>i.tiles.delete('-1,0')]) {
+  i=>delete i.source,i=>i.source.producerFinishedAt=Date.parse(date)/1000,i=>i.tiles.delete('-1,0')]) {
   const i=index();mutate(i);assert.equal(canRetireDetail(i,identity,date,chunks),false);
  }
  assert.equal(canRetireDetail(index(),null,date,chunks),false);

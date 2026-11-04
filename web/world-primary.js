@@ -1,7 +1,7 @@
-// Only a complete, newer, identity-checked world publication may retire a legacy detail.
+// A newer, identity-checked world publication covering the detail may retire it.
 // Call after the immutable index AND its atlas have been validated and committed.
 export function canRetireDetail(index, identity, generatedAt, chunks) {
-  if (!index?.immutable || !identity || !index.context || !index.source?.planComplete
+  if (!index?.immutable || !identity || !index.context || !index.source
       || index.context.world !== identity.world || index.context.dimension !== identity.dimension
       || typeof index.context.caves !== 'boolean' || index.tileSize !== 64 || !index.tiles?.size) return false;
   const created = Date.parse(generatedAt);

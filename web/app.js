@@ -15,6 +15,8 @@ import { createRenderStatusPoller, describeRenderStatus, fetchRenderStatus, form
 import { createHiresStatusPoller, describeHiresStatus } from './hires-status.js';
 import { describeHiresPublication } from './hires-publication.js';
 import { canRetireDetail, publishedBounds } from './world-primary.js';
+import { mapAreas, terrainFocus } from './map-areas.js';
+import { createBlockPicker } from './block-picker.js';
 import { describePublisherStatus } from './hires-publisher-status.js';
 import { describeCaveStatus } from './cave-status.js';
 import { modelStatusPanel } from './model-status.js';
@@ -67,7 +69,7 @@ const PICK_MAX_MS = 500;
 const BACKGROUND = 0x0f151c;
 // Fly mode loads around the camera itself; "auto" means this radius (9 x 9 chunks), not the orbit zoom rule.
 const FLY_AUTO_RADIUS = 4;
-const ORBIT_ONLY_CONTROLS = ['goto-x', 'goto-z', 'goto-submit', 'reset', 'zoom-in', 'zoom-out'];
+const ORBIT_ONLY_CONTROLS = ['goto-x', 'goto-z', 'goto-submit', 'reset', 'zoom-in', 'zoom-out', 'area-select', 'area-go'];
 // three.js physical light units (r155+); starting values, tune against the real atlas.
 const LIGHT = { hemisphere: 1.7, ambient: 0.6, sun: 1.0 };
 // Experimental opt-in LOD (?lod=1, generation mode with a valid manifest.lod): detail within these horizontal
@@ -814,6 +816,7 @@ function initViewer() {
 const raycaster = new THREE.Raycaster();
 let pendingGoto = null;
 function cancelPendingGoto() {
+  state.pendingArea = null;
   const wasPending = pendingGoto?.pending;
   pendingGoto?.cancel();
   // Once navigation changes, the old destination's loading notice is no longer current.
@@ -849,6 +852,7 @@ function gotoHeight(x, z) {
 }
 
 function resetCamera() {
+  if (state.mapView && state.areas?.length) { visitArea(state.defaultArea ?? state.areas[0]); return; }
   cancelPendingGoto();
   const { min, max } = state.bounds;
   const [cx, cy, cz] = state.mapView ? state.focus : [0, 1, 2].map((i) => (min[i] + max[i]) / 2);
@@ -912,6 +916,56 @@ function finishPendingGoto(key) {
 }
 
 // ---------------------------------------------------------------- block selection
+let blockPicker = null;
+
+function refreshAreas(index) {
+  state.areas=mapAreas(index.tiles);
+  const previous=$('area-select').value;
+  const shown=state.areas.slice(0,200);
+  $('area-select').replaceChildren(...shown.map((area,i)=>{
+    const option=document.createElement('option');option.value=area.key;
+    option.textContent=`${i+1}. X ${area.x} · Z ${area.z} · ${area.count} dlaždic`;return option;
+  }));
+  if(shown.some(a=>a.key===previous))$('area-select').value=previous;
+  $('map-areas').hidden=shown.length===0;
+  $('area-summary').textContent=`Celá publikace: ${index.tiles.size} dlaždic v ${state.areas.length} oddělených oblastech. `
+    +(state.areas.length>200?'Nabídka obsahuje 200 největších. ':'')
+    +'Dlaždice mohou obsahovat neuložené chunky; počty načteného okolí výše nejsou celá mapa.';
+  if(state.mapView && !state.areaInitialized) {
+    state.areaInitialized=true;
+    const [x,,z]=state.focus;
+    state.defaultArea=[...state.areas].sort((a,b)=>(a.x-x)**2+(a.z-z)**2-((b.x-x)**2+(b.z-z)**2))[0];
+    if(!state.userMoved && state.fly?.mode!=='fly' && state.defaultArea)visitArea(state.defaultArea);
+  }
+}
+
+function visitArea(area) {
+  if(!area || state.fly?.mode==='fly')return;
+  $('area-select').value=area.key;
+  $('goto-x').value=String(area.x);$('goto-z').value=String(area.z);
+  moveTo({preventDefault(){}});
+  const span=Math.max(32,Math.min(160,area.span));
+  camera.position.copy(controls.target).add(new THREE.Vector3(span*.85,span*.95,span*1.1));
+  controls.maxDistance=Math.max(controls.maxDistance,2000);
+  state.pendingArea={...area,cut:state.cut};
+  refineAreaFocus(area.key);updateHires();state.dirty=true;
+}
+
+function refineAreaFocus(key) {
+  const request=state.pendingArea;
+  if(!request || request.key!==key || request.cut!==state.cut || state.fly?.mode==='fly')return;
+  const entry=hires.tiles.get(key);if(!entry)return;
+  state.pendingArea=null;
+  if(state.cut!==null)return; // Do not aim above an active cave cut.
+  const focus=terrainFocus(entry.heights,key);if(!focus)return;
+  const span=request.count===1?Math.max(24,focus.span*1.5):Math.max(64,Math.min(160,request.span));
+  controls.target.set(focus.x,focus.y,focus.z);
+  $('goto-x').value=String(Math.floor(focus.x));$('goto-z').value=String(Math.floor(focus.z));
+  camera.position.copy(controls.target).add(new THREE.Vector3(span*.85,span*.95,span*1.1));
+  pendingGoto?.cancel();
+  $('goto-msg').textContent=`Zobrazená uložená oblast kolem X ${Math.floor(focus.x)}, Z ${Math.floor(focus.z)}.`;
+  $('goto-msg').classList.remove('warn');controls.update();state.dirty=true;
+}
 
 const pickRaycaster = new THREE.Raycaster();
 
@@ -930,6 +984,7 @@ function showPick({ cell = null, block = null, message = null, warn = false }) {
 }
 
 function closePick() {
+  blockPicker?.cancel();
   state.pickSeq += 1;  // any pending lookup is now stale
   $('pick').hidden = true;
 }
@@ -976,6 +1031,8 @@ async function lookupBlock({ x, y, z }) {
 }
 
 function pickAt(clientX, clientY) {
+  blockPicker ??= createBlockPicker({base:`${DATA_URL}collision/`});
+  blockPicker.cancel();
   const rect = renderer.domElement.getBoundingClientRect();
   const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
   pickRaycaster.setFromCamera(ndc, camera);
@@ -1001,7 +1058,7 @@ function pickAt(clientX, clientY) {
     }
     showPick({ cell, message: 'Načítám…' });
     const pickedLayout = HIRES_IMMUTABLE ? hires.index?.context?.layoutSha256 : null;
-    loadHiresSprites().then((spriteAt) => {
+    loadHiresSprites().then(async (spriteAt) => {
       if (seq !== state.pickSeq) return;
       if(HIRES_IMMUTABLE && pickedLayout!==hires.index?.context?.layoutSha256){
         showPick({cell,message:'Mapa se aktualizovala; vyber blok znovu.'});return;
@@ -1009,6 +1066,14 @@ function pickAt(clientX, clientY) {
       const sprite = spriteAt && uv ? spriteAt(uv.x, uv.y) : null;
       showPick({ cell, block: { name: sprite ? `textura: ${sprite}` : 'neznámá textura', id: '–', meta: '–' },
         message: 'Tento výběr určuje texturu plochy a souřadnice, ne přesné ID a metadata bloku.' });
+      if(state.cut!==null || !HIRES_IMMUTABLE || state.mapView?.collisions===false)return;
+      const textureBlock={name:sprite?`textura: ${sprite}`:'neznámá textura',id:'–',meta:'–'};
+      showPick({cell,block:textureBlock,message:'Ověřuji ID a metadata bloku…'});
+      const key=`${Math.floor(cell.x/64)},${Math.floor(cell.z/64)}`,geometry=hires.tiles.get(key)?.sha,atlas=visibleHiresAtlasSha();
+      const isCurrent=()=>seq===state.pickSeq && state.cut===null && hires.tiles.get(key)?.sha===geometry && visibleHiresAtlasSha()===atlas;
+      const block=await blockPicker.lookup(cell,{atlasSha:atlas,geometryAt:k=>k===key&&isCurrent()?geometry:undefined,isCurrent});
+      if(block && isCurrent())showPick({cell,block,message:'Blok z ověřených dat stejné verze jako vykreslená plocha.'});
+      else if(isCurrent())showPick({cell,block:textureBlock,message:'Odpovídající bloková data nejsou dostupná; zobrazuji pouze texturu plochy.'});
     });
     return;
   }
@@ -1429,6 +1494,7 @@ async function loadHiresIndex() {
     }
     retireLegacyDetail(index);
     showHiresPublication(index);
+    refreshAreas(index);
     if (state.mapView) scheduleHiresPanel();
     showCaveCoverage();
     updateHires();
@@ -1488,7 +1554,7 @@ function showHiresPublication(index) {
 }
 
 function startHires() {
-  hires.onTileAttached = finishPendingGoto;
+  hires.onTileAttached = key=>{finishPendingGoto(key);refineAreaFocus(key);};
   hiresAtlas ??= createHiresAtlas({
     loadAtlas: (url, sha) => loadAtlas(url, undefined, sha),
     makeMaterials: makeHiresMaterials,
@@ -2516,6 +2582,7 @@ function wireUi() {
   }
   $('world-diagnostics-load').addEventListener('click', loadWorldDiagnostics);
   $('goto').addEventListener('submit', moveTo);
+  $('area-go').addEventListener('click',()=>visitArea(state.areas?.find(a=>a.key===$('area-select').value)));
   $('cov-find').addEventListener('click', () => { findUnsupported().catch((err) => console.error(err)); });
   $('reset').addEventListener('click', () => { cancelPendingGoto(); if (state.fly?.mode !== 'fly') { state.userMoved = true; resetCamera(); } });
   $('opt-fog').addEventListener('change', applyDisplayOptions);
@@ -2714,6 +2781,7 @@ function showStandaloneProgress() {
 }
 
 function startStandaloneView(view) {
+  ensurePicking();
   if (!HIRES_IMMUTABLE) throw new DataError('Samostatná dimenze vyžaduje neměnné publikování.');
   state.mapView = view;
   state.mapIdentity = { world: view.world, dimension: view.dimension };

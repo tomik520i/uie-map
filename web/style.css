@@ -20,6 +20,10 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+#map-areas { margin: 12px 0; }
+#map-areas label { display: block; color: var(--muted); margin-bottom: 6px; }
+#area-select { width: 100%; max-width: 100%; padding: 9px; border: 1px solid var(--panel-border); border-radius: 8px; background: var(--bg); color: var(--text); }
+#area-go { width: 100%; margin-top: 8px; }
 
 html, body {
   margin: 0;

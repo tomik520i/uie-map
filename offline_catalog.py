@@ -222,6 +222,16 @@ class Catalog:
         complete = all(f is not None for f in faces)
         faces = [f if f is not None else self.missing_uv for f in faces]
         tint, const = self._tint(name, color)
+        # OS.jar BlockCrystalTreeLog extends BlockRotatedPillar without changing bounds;
+        # it explicitly reports non-opaque, so neighbours must remain visible. Restrict
+        # this rule to the audited upright variant; horizontal UV rotation is not inferred.
+        crystal_faces = ['OreSpawn:crystaltreelog_top'] * 2 + ['OreSpawn:crystaltreelog'] * 4
+        if (name == 'OreSpawn:OreSpawn_CrystalTreeLog' and cls_name == 'danger.orespawn.BlockCrystalTreeLog'
+                and rt == 31 and opaque is False and meta == 0 and variant['meta'] == 0 and complete
+                and all(n in self.sprites for n in crystal_faces)
+                and [f.get('name') if f else None for f in variant['faces']] == crystal_faces):
+            return Model('cube', 'assumed', 'cutout', faces, tint, const,
+                         reason='audited upright CrystalTreeLog pillar; non-opaque, horizontal variants not modelled')
         confirmed = CONFIRMED_CUBES.get((name, cls_name, rt))
         if confirmed and meta in confirmed[0] and variant["meta"] == meta and opaque is True and complete:
             return Model("cube", "assumed", "solid", faces, tint, const, reason=confirmed[1])

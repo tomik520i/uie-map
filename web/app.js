@@ -2678,7 +2678,7 @@ function showStandaloneProgress() {
   $('retry-chunks').hidden = s.failed === 0;
   setProgress(s.loading ? s.loaded : 0, s.loading ? s.wanted : 0);
   setStatus(s.failed ? 'warn' : s.loading ? 'loading' : 'ok',
-    `${s.loading ? 'Načítám dimenzi' : s.failed ? 'Dimenze načtena částečně' : 'Dimenze načtena'} · ${s.loaded} / ${s.wanted} dlaždic`);
+    `${s.loading ? 'Načítám okolí' : s.failed ? 'Okolí načteno částečně' : 'Okolí načteno'} · ${s.loaded} / ${s.wanted} dlaždic`);
 }
 
 function startStandaloneView(view) {
@@ -2698,6 +2698,8 @@ function startStandaloneView(view) {
   $('render').hidden = true;
   $('cov-rendered').closest('section').hidden = true;
   for (const id of ['opt-overview', 'opt-players']) $(id).disabled = true;
+  $('opt-overview').checked = false;
+  $('streaming-note').textContent = 'Počty načtených dlaždic platí pro okolí kamery, nikoli celou dimenzi. Vzdálenější terén se uvolňuje z paměti; tato dimenze nemá hrubý vzdálený přehled. Mapa zobrazuje pouze uložené chunky. Chybějící chunky mohou vytvořit mezery a svislé okraje terénu.';
   if (!WORLD_CAVES) for (const id of ['opt-cut','cut-level','opt-cut-cap']) $(id).disabled=true;
   const note = document.createElement('p'); note.className = 'note';
   note.textContent = `Dimenze ${view.dimension}. ${WORLD_CAVES?(view.dimension==='-1'?'Nether se otevírá ve výškovém řezu pod stropem; výšku lze změnit.':'Jeskyně jsou připojené; zapni výškový řez.'):'Jeskyně nejsou připojené.'} `

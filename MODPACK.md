@@ -194,8 +194,10 @@ stávající exportované katalogy tím nevynutí kompletní přepočet.
 Ověřeno na Ubuntu: skutečný procesní pool, malý syntetický svět s regionovým
 souborem, povrch i jeskyně, publikace neměnných generací a řezů, přesný atlas,
 diagnostika nepopsaných metadat a přeskočení nezměněného regionu při druhém běhu.
-Pro tento typ katalogu ještě zbývá ověřit celý konfigurovaný systemd provoz a web
-na druhém modpacku. Starší `offline_render.py` pro jednotlivé UIE2 snapshoty
+Na izolovaném syntetickém světě prošel také konfigurovaný systemd render povrchu
+i jeskyní s limitem 512 MiB, kontrola doctor a soukromý web: 24 trojúhelníků,
+načtený správný atlas, řez ve výšce 6 a 1/1 uzávěrů, bez JavaScript chyb.
+Druhý skutečný modpack, jeho speciální tvary a dlouhodobý update cyklus zbývají. Starší `offline_render.py` pro jednotlivé UIE2 snapshoty
 tento nový formát zatím nepodporuje.
 Nejde ještě o kompletní automatický import libovolného modpacku; podporovány jsou
 explicitní kostky solid/cutout, nikoli obecné speciální renderery modů.

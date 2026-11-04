@@ -173,7 +173,29 @@ identity JSON/PNG, stěny a neprůhlednost. Výsledek lze předat `offline_meshe
 Ověřeno 76 testy na Ubuntu a vytvořením geometrie ze skutečného atlasu a registru
 UIE; záměrně nepopsaná metadata byla označena jako fallback.
 
-**Zbývá napojení na dávkový renderer, konfiguraci a publikování celého světa.**
-Report proto uvádí `mesherReady: true`, ale `batchRendererReady: false`.
+**Dávkový renderer `world_hires.py` nyní explicitní katalog podporuje.**
+Report nově uvádí `mesherReady: true` a `batchRendererReady: true`.
+Do `catalog` v konfiguraci zadejte novou složku explicitního katalogu. `doctor`
+ověří modely a registr; nevyžaduje staré klientské exporty ani barevné mapy.
+Nepopsané bloky zůstanou viditelně označené jako fallback.
+
+Samostatný příklad (nový výstup mimo svět a katalog):
+
+```sh
+python world_hires.py --world ./world --catalog-dir ./explicit-catalog --out ./rendered --workers 1 --prepare-immutable
+```
+
+Přepínače `--caves --cave-caps` přidají jeskynní geometrii a data pro výškové
+řezy. Použijte pro ně samostatný výstup. Geometrie a atlas jsou propojené hashem;
+pracovní procesy dostanou stejný ověřený modelový katalog jako hlavní proces.
+Změna implementace explicitního katalogu ovlivňuje identitu pouze jeho renderů,
+stávající exportované katalogy tím nevynutí kompletní přepočet.
+
+Ověřeno na Ubuntu: skutečný procesní pool, malý syntetický svět s regionovým
+souborem, povrch i jeskyně, publikace neměnných generací a řezů, přesný atlas,
+diagnostika nepopsaných metadat a přeskočení nezměněného regionu při druhém běhu.
+Pro tento typ katalogu ještě zbývá ověřit celý konfigurovaný systemd provoz a web
+na druhém modpacku. Starší `offline_render.py` pro jednotlivé UIE2 snapshoty
+tento nový formát zatím nepodporuje.
 Nejde ještě o kompletní automatický import libovolného modpacku; podporovány jsou
 explicitní kostky solid/cutout, nikoli obecné speciální renderery modů.

@@ -1,6 +1,6 @@
 """Explicit cube catalog for Mesher; separate from the legacy exported catalog.
 
-No metadata inheritance or renderType/class heuristics. Batch CLI integration is separate.
+No metadata inheritance or renderType/class heuristics. Supported by world_hires.
 """
 import argparse,hashlib,json,math,os,shutil,tempfile
 from pathlib import Path
@@ -77,6 +77,7 @@ def prepare(source):
 
 class ExplicitCatalog:
     def __init__(self,doc):
+        self.document=doc
         self.identity=doc['identity'];self.registry_sha256=doc['registrySha256'];self.missing_uv=tuple(doc['missing'])
         self.sprites={};self._models={}
         for row in doc['models']:
@@ -122,6 +123,23 @@ class ExplicitCatalog:
         doc['identity']=identity
         return cls(doc)
 
+    def atlas_assets(self,source):
+        """Snapshot verified PNG and a viewer-compatible layout for these exact models."""
+        raw=atlas_identity._read(Path(source)/'atlas.png',256*1024*1024,'catalog atlas')
+        if sha(raw)!=self.document['atlasSha256']:raise ValueError('Catalog atlas changed before rendering')
+        width,height,_,_=png_io.decode(raw)
+        def sprite(name,face):
+            return dict(iconName=name,state='placed',x=round(face[0]*width),y=round(face[1]*height),
+                        width=round((face[2]-face[0])*width),height=round((face[3]-face[1])*height),
+                        rotated=False,uv=list(map(float,face)),getterUv=list(map(float,face)),getterUvMatches=True)
+        missing=sprite('uiemap:missing',self.missing_uv)
+        uploaded={'uiemap:missing':missing}
+        for i,face in enumerate(sorted({tuple(f) for r in self.document['models'] for f in r['faces']})):
+            name='uiemap:explicit/'+str(i);uploaded[name]=sprite(name,face)
+        layout=dict(format='UIE_ATLAS_LAYOUT1',width=width,height=height,reusable=True,reuseBlockers=[],
+                    missing=missing,registered=uploaded,uploaded=uploaded,atlasSha256=sha(raw))
+        return {'atlas.png':raw,'atlas-layout.json':canonical(layout)}
+
 
 def build(source,out,apply=False):
     source=Path(source).absolute();dest=Path(out).absolute()
@@ -129,7 +147,7 @@ def build(source,out,apply=False):
     if dest.exists() or not dest.parent.is_dir():raise ValueError('Output must be new with an existing parent')
     raw,doc=prepare(source)
     result=dict(format='UIEMAP_EXPLICIT_CATALOG_REPORT1',models=len(doc['models']),identity=doc['identity'],
-                mesherReady=True,batchRendererReady=False,modelSemanticsVerified=False,readOnly=not apply)
+                mesherReady=True,batchRendererReady=True,modelSemanticsVerified=False,readOnly=not apply)
     if not apply:return result
     lock=dest.with_name(dest.name+'.catalog-lock');stage=None
     with lock.open('x'):pass

@@ -47,6 +47,16 @@ def inspect(path):
         catalogs.setdefault(row['catalog'],'dimension:'+row['key']+':')
     for directory,prefix in catalogs.items():
         catalog=Path(directory)
+        if (catalog/'model-catalog.json').exists():
+            def explicit(catalog=catalog):
+                from explicit_catalog import ExplicitCatalog
+                from modpack_registry import read_registry
+                if (catalog/'catalog.json').exists():raise ValueError('Ambiguous catalog: both legacy and explicit models')
+                loaded=ExplicitCatalog.load(catalog,read_registry(config['world']['path']))
+                loaded.atlas_assets(catalog)
+                return dict(identity=loaded.identity,models=len(loaded.document['models']),modelSemanticsVerified=False)
+            check(prefix+'explicit-catalog',explicit)
+            continue
         for name in ('catalog.json', 'atlas.png', 'atlas-layout.json', 'grass.png', 'foliage.png'):
             check(prefix+'file:'+name, lambda name=name,catalog=catalog: readable(catalog,name))
         check(prefix+'compiled-catalog',lambda catalog=catalog: compiled(catalog))

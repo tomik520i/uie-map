@@ -23,7 +23,7 @@ class ExplicitTests(unittest.TestCase):
         for name,meta in [('sample:stone',1),('other:stone',0),('unknown:block',0)]:
             self.assertEqual(cat.model(name,meta).kind,'fallback')
         self.assertEqual(cat.model('minecraft:air',0).kind,'none')
-        self.assertTrue(report['mesherReady']);self.assertFalse(report['batchRendererReady'])
+        self.assertTrue(report['mesherReady']);self.assertTrue(report['batchRendererReady'])
         self.assertFalse(report['modelSemanticsVerified'])
     def test_real_mesher_reports_missing_metadata_and_uses_correct_uv(self):
         cat,_=self.make();vol=volume({(1,5,1):(51,0),(3,5,1):(51,1),(5,5,1):(52,0)})

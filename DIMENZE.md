@@ -1,6 +1,6 @@
 # Dimenze — rozpoznání, render a webový přepínač
 
-**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je od 3. 11. **HOTOVÝ / VEŘEJNĚ NASAZENÝ**: všech 39 uložených regionových souborů, 990 povrchových dlaždic a odpovídající kolizní i jeskynní data prošly auditem. Výchozí řez ve výšce 96 otevře pohled pod strop. Dvě samostatné 30min aktualizační fronty jsou zapnuté; první přepočet pěti změněných oblastí právě probíhá, jeho dokončení ještě není potvrzené.
+**Aktuální stav:** Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je od 3. 11. **HOTOVÝ / VEŘEJNĚ NASAZENÝ**: všech 39 uložených regionových souborů, 990 povrchových dlaždic a odpovídající kolizní i jeskynní data prošly auditem. Výchozí řez ve výšce 96 otevře pohled pod strop. Dvě samostatné 30min aktualizační fronty jsou zapnuté; dokončené automatické cykly povrchu, kolizí, jeskyní i jejich úklidu potvrzeny 4. 11.; další aktualizace běží pravidelně.
 
 ```sh
 python world_layout.py /cesta/k/vlastnimu/svetu
@@ -85,7 +85,7 @@ Vstupem serveru zůstává `node server.mjs`; tento soubor je kompatibilní i s 
 <!-- CURRENT EXPANSION START -->
 ## Aktuální nasazení dalších dimenzí (3. 11.)
 
-Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je od 3. 11. **HOTOVÝ / VEŘEJNĚ NASAZENÝ**: všech 39 uložených regionových souborů, 990 povrchových dlaždic a odpovídající kolizní i jeskynní data prošly auditem. Výchozí řez ve výšce 96 otevře pohled pod strop. Dvě samostatné 30min aktualizační fronty jsou zapnuté; první přepočet pěti změněných oblastí právě probíhá, jeho dokončení ještě není potvrzené.
+Veřejná ukázka nabízí hlavní dimenzi a DIM42, DIM80, DIM81, DIM82, DIM83, DIM84, DIM85 včetně povrchu, blokových kolizí a jeskyní. Nově přidané dimenze obnovují dvě společné sekvenční 30min fronty s omezeným úklidem; DIM42 má své dosavadní časovače. Všech šest vybraných neprázdných modovaných dimenzí je zveřejněných. DIM−112 neobsahuje bloky. Nether je od 3. 11. **HOTOVÝ / VEŘEJNĚ NASAZENÝ**: všech 39 uložených regionových souborů, 990 povrchových dlaždic a odpovídající kolizní i jeskynní data prošly auditem. Výchozí řez ve výšce 96 otevře pohled pod strop. Dvě samostatné 30min aktualizační fronty jsou zapnuté; dokončené automatické cykly povrchu, kolizí, jeskyní i jejich úklidu potvrzeny 4. 11.; další aktualizace běží pravidelně.
 
 | Dimenze | Veřejných dlaždic | Povrch / kolize / jeskyně |
 | --- | ---: | --- |

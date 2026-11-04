@@ -228,12 +228,13 @@ def read_chunks(copies: dict, area, failed: set | None = None) -> dict:
 _W = {}
 
 
-def _init(catalog_dir: str, registry: dict, region_dir: str, out: str, caves=False, cap_binding=None):
+def _init(catalog_dir: str, registry: dict, region_dir: str, out: str, caves=False, cap_binding=None, explicit=None):
     from offline_catalog import Catalog
     from offline_mesher import Colormap, Mesher
     d = Path(catalog_dir)
-    catalog = Catalog.load_compiled(d / "catalog.json")
-    _W.update(mesher=Mesher(catalog, Colormap(d / "grass.png", d / "foliage.png"), caves=caves),
+    catalog = explicit if explicit is not None else Catalog.load_compiled(d / "catalog.json")
+    colormap = None if explicit is not None else Colormap(d / "grass.png", d / "foliage.png")
+    _W.update(mesher=Mesher(catalog, colormap, caves=caves),
               registry=registry, region_dir=Path(region_dir), out=Path(out), cap_binding=cap_binding,
               scratch=Path(tempfile.mkdtemp(prefix="uie-hires-")))
 
@@ -569,17 +570,28 @@ def build(world: Path, catalog_dir: Path, out: Path, workers: int, max_jobs=None
         budget_report = inspect_budget(out,max_store_bytes=cave_store_budget_bytes)
         if budget_report['state'] != 'ready':
             raise HiresError('Cave budget blocked: '+','.join(budget_report['reasons']))
+    raw = (world / "level.dat").read_bytes()
+    registry = dict(reader.parse_fml_registry(reader.parse_level_dat(raw)).blocks)
+    explicit = None
+    if (catalog_dir / 'model-catalog.json').exists():
+        from explicit_catalog import ExplicitCatalog
+        if (catalog_dir / 'catalog.json').exists():raise HiresError('Ambiguous catalog: both legacy and explicit models')
+        explicit = ExplicitCatalog.load(catalog_dir,registry)
+        assets = explicit.atlas_assets(catalog_dir)
+        catalog = explicit
+    else:
+        catalog = Catalog.load_compiled(catalog_dir / "catalog.json")
+        assets = None
     for sub in ("tiles", "jobs"):
         (out / sub).mkdir(parents=True, exist_ok=True)
     for name in ("atlas.png", "atlas-layout.json"):
-        _publish_catalog_asset(catalog_dir / name, out / name)
-    raw = (world / "level.dat").read_bytes()
-    registry = dict(reader.parse_fml_registry(reader.parse_level_dat(raw)).blocks)
-    catalog = Catalog.load_compiled(catalog_dir / "catalog.json")
+        if assets is None:_publish_catalog_asset(catalog_dir / name, out / name)
+        else:_atomic_write(out / name,assets[name])
     # Output-defining code only (mesher, catalog, volume) + the tile format version: scheduling changes in this
     # file must not force a whole-world re-render.
     code = MAGIC + b"".join(Path(__file__).with_name(n).read_bytes()
                             for n in ("offline_mesher.py", "offline_catalog.py", "offline_volume.py"))
+    if explicit is not None:code += Path(__file__).with_name('explicit_catalog.py').read_bytes()
     identity = geometry_identity(catalog.identity, code, caves, cave_caps)
     meta = {"renderer": "uie-offline-mesher/1+hires", "identity": identity, "caves": caves,
             "atlas": "atlas.png", "atlasSha256": hashlib.sha256((out / "atlas.png").read_bytes()).hexdigest()}
@@ -645,7 +657,7 @@ def build(world: Path, catalog_dir: Path, out: Path, workers: int, max_jobs=None
     import multiprocessing as mp
     try:
         with mp.get_context("fork" if hasattr(os, "fork") else "spawn").Pool(
-                workers, initializer=_init, initargs=(str(catalog_dir), registry, str(region_dir), str(out), caves, cap_binding)) as pool:
+                workers, initializer=_init, initargs=(str(catalog_dir), registry, str(region_dir), str(out), caves, cap_binding, explicit)) as pool:
             results = pool.imap_unordered(render_job, todo)
             while True:
                 # Wait for the next job at most until the next heartbeat is due (no busy loop, no rescans).

@@ -14,6 +14,7 @@ import { createGotoTerrain } from './goto-terrain.js';
 import { createRenderStatusPoller, describeRenderStatus, fetchRenderStatus, formatDuration } from './render-status.js';
 import { createHiresStatusPoller, describeHiresStatus } from './hires-status.js';
 import { describeHiresPublication } from './hires-publication.js';
+import { canRetireDetail, publishedBounds } from './world-primary.js';
 import { describePublisherStatus } from './hires-publisher-status.js';
 import { describeCaveStatus } from './cave-status.js';
 import { modelStatusPanel } from './model-status.js';
@@ -542,6 +543,7 @@ function planLod(manifest) {
 
 /** Start the stream for a manifest: LOD when opted in and valid, otherwise the unchanged ChunkStream. */
 function startStream(manifest) {
+  if (state.worldPrimary) return;
   const plan = !state.lodOptIn ? null : state.generation ? planLod(manifest)
     : { lod: null, warning: 'Experimentální LOD je dostupné jen pro zveřejněné verze mapy; zobrazují se plné detaily.' };
   state.lodNote = plan?.warning ? { text: plan.warning, warn: true } : null;
@@ -1006,7 +1008,7 @@ function pickAt(clientX, clientY) {
       }
       const sprite = spriteAt && uv ? spriteAt(uv.x, uv.y) : null;
       showPick({ cell, block: { name: sprite ? `textura: ${sprite}` : 'neznámá textura', id: '–', meta: '–' },
-        message: 'Mimo detail u spawnu zná mapa jen texturu plochy, ne přesné ID a metadata bloku.' });
+        message: 'Tento výběr určuje texturu plochy a souřadnice, ne přesné ID a metadata bloku.' });
     });
     return;
   }
@@ -1230,7 +1232,7 @@ function scheduleHiresPanel() {
   hiresPanelTimer = setTimeout(() => {
     hiresPanelTimer = null;
     if (state.stream) showStream(state.stream.getSnapshot());
-    else if (state.mapView) showStandaloneProgress();
+    else if (state.mapView || state.worldPrimary) showStandaloneProgress();
   }, 250);
 }
 
@@ -1425,6 +1427,7 @@ async function loadHiresIndex() {
     })) {
       return;
     }
+    retireLegacyDetail(index);
     showHiresPublication(index);
     if (state.mapView) scheduleHiresPanel();
     showCaveCoverage();
@@ -1437,6 +1440,32 @@ async function loadHiresIndex() {
     hires.indexLoading = false;
     if(sourceBase!==desiredHiresBase())queueMicrotask(loadHiresIndex);
   }
+}
+
+function retireLegacyDetail(index) {
+  if (state.mapView || state.worldPrimary || !WORLD_CAVES
+      || !canRetireDetail(index,state.mapIdentity,state.detailGeneratedAt,state.chunkEntries)) return;
+  state.worldPrimary = true;
+  state.watcher?.dispose();
+  state.detailStatusPoller?.dispose();
+  state.blockIndex = null; // Walking must follow the same current geometry, never the old spawn blocks.
+  state.stream?.dispose();
+  state.stream = null;
+  state.chunkEntries = [];
+  noteDetailResident({resident:[]});
+  closePick();
+  state.findSeq += 1;
+  scheduleCutCaps();
+  $('legacy-detail-status').hidden = true;
+  $('cov-rendered').closest('section').hidden = true;
+  $('streaming-note').textContent = 'Načítá se aktuální povrch nebo podzemí kolem kamery; vzdálenější terén se uvolňuje z paměti. Starý samostatný detail spawnu je vypnutý. Vzdálenou krajinu zobrazuje hrubý přehled. Limit geometrie okolí je 500 MiB; textury a prohlížeč potřebují další paměť.';
+  const bounds=publishedBounds(index);
+  if(bounds) {
+    $('bounds').previousElementSibling.textContent='Rozsah publikovaných dlaždic';
+    $('bounds').textContent=`X ${bounds.min[0]} … ${bounds.max[0]} · Z ${bounds.min[2]} … ${bounds.max[2]} (může obsahovat neuložené oblasti)`;
+  }
+  ensurePicking();
+  scheduleHiresPanel();
 }
 
 function showHiresPublication(index) {
@@ -1852,7 +1881,7 @@ let caveCoverage = createCaveCoverage(null);
 function showCaveCoverage() {
   const center = state.fly?.mode === 'fly' ? camera.position : controls.target;
   let description = caveCoverage.describe({ x: center.x, z: center.z, cut: state.cut });
-  if (WORLD_CAVES && state.cut !== null && hires.index?.context?.caves === true && description.state === 'outside') {
+  if (WORLD_CAVES && state.cut !== null && hires.index?.context?.caves === true && (state.worldPrimary || description.state === 'outside')) {
     const key=`${Math.floor(center.x/64)},${Math.floor(center.z/64)}`;
     description={...description,state:'cave-prototype',text:hires.index.tiles.has(key)
       ? 'Podzemní geometrie je v tomto regionu dostupná.'
@@ -1965,6 +1994,7 @@ async function updateCutCaps() {
 }
 
 function showManifest(m) {
+  state.detailGeneratedAt = m.generatedAt;
   const title = m.title.trim() || 'UIE mapa';
   $('title').textContent = title;
   document.title = title;
@@ -2570,6 +2600,7 @@ function discardGeneration(prepared) {
 // detached synchronously by setDesired before the next frame, so no frame draws an old changed mesh with
 // the new atlas. Changed chunks then reload through the normal queue (visible holes until they arrive).
 function commitGeneration(prepared) {
+  if (state.worldPrimary) { discardGeneration(prepared); return; }
   // Opt-in LOD: when the current or the next stream is LOD, every generation commit resets all geometry.
   const plan = state.lodOptIn ? planLod(prepared.manifest) : null;   // pure preflight, never throws
   if (state.stream?.kind === 'lod' || plan?.lod) {
@@ -2656,6 +2687,7 @@ function showRefreshState({ state: kind, message }) {
 }
 
 function startRevisionWatcher(revision) {
+  if (state.worldPrimary) return;
   state.watcher = createRevisionWatcher({
     fetchRevision,
     prepare: prepareGeneration,
@@ -2763,7 +2795,7 @@ async function main() {
   startFlyMode();
   startCollisionPilot();
   // Independent of the map: a missing or broken status file only affects the render status panel.
-  startRenderStatus();
+  state.detailStatusPoller = startRenderStatus();
   startHiresStatus();
   startCollisionPreparationStatus();
   startOverviewStatus();

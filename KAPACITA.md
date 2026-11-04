@@ -116,3 +116,14 @@ Inventář zachytil **39 regionových souborů, 14235 uložených chunků a 990 
 Pro samotnou geometrii by dvě celé nesdílené generace při stejné hustotě představovaly 165.96 MiB; při dvojnásobné hustotě 331.91 MiB. Jsou to scénáře, nikoli horní meze. Nezahrnují kolize, jeskyně, atlasy, historii metadat ani pracovní rezervu.
 
 Toto měření čte ověřený index a velikosti odkazovaných souborů; znovu nehashuje každý payload. Doplnění 3. 11.: plný audit všech vrstev a veřejné připojení Netheru jsou hotové. První dokončený jeskynní průchod trval 4846,74 s (80,78 min), nezahrnuje předchozí obnovy, čekání a následný audit. Čas povrchu tedy není čas dokončení celé dimenze. Nether obsahuje přirozený strop a jeho prohlížení standardně používá jeskynní řez; samotná stropní geometrie není odhadem složitosti podzemí.
+
+
+## DIM84 — 4. 11. 2026: HOTOVO / VEŘEJNĚ NASAZENO
+
+Oprava 6 055 svislých CrystalTreeLog (metadata 0) je veřejná. Všech 758 uložených chunků v 10 regionových souborech bylo přepočítáno: 161 povrchových dlaždic, 161 kolizních párů a 161 jeskynních párů. Atlas zůstal shodný; pokrytí původní mapy zachováno. Audit všech objektů, hashů a vazeb PASS. Soukromý i veřejný browser: povrch, jeskyně Y48, uzávěry 16/16, návrat na povrch PASS; konzole bez chyb. Veřejná diagnostika: fallback 0, chybějící textura 0, 4 Thaumcraft:blockAiry bez geometrie. Krátké létání ověřeno, úplný regresní test chůze tím není nahrazen.
+
+Nové samostatné 30min fronty DIM84: povrch + kolize + úklid a jeskyně + úklid. Obě enabled/active, první automatické běhy complete=true a exit 0. Ostatních pět rozšířených dimenzí ponecháno na původním runtime. Herní procesy nezměněny; klient nebyl spuštěn.
+
+Celý první přepočet: povrch 231,06 s, kolize 319,66 s, jeskyně 291,91 s, celkem 14,04 min. Po prvním update je 90,44 MiB unikátně alokovaných výstupních souborů (87,68 MiB logicky). Bez katalogu, kódu, zdrojového světa, staré publikace a adresářových metadat. Jde o měření této uložené oblasti, nikoli obecný odhad dalších světů.
+
+ČEKÁ: ověření průhlednosti CrystalStone/Grass, vodorovné varianty kmene, přesná ID v jeskyních. Univerzální import a distribuce zůstávají rozpracované.

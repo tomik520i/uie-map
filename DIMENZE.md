@@ -118,3 +118,14 @@ Veřejný prohlížeč ověřil přepínání a jeskynní řezy i chůzi na jedn
 Soukromý i veřejný prohlížeč ověřil načtení podzemí a uzávěrů, řez48, vypnutí řezu a návrat do hlavního světa bez přenesení Nether nastavení. Blokové kolize byly ověřené i přes skutečné veřejné HTTP požadavky při vypnutém řezu. Při zapnutém jeskynním řezu používá pohyb přibližné kolize geometrie; přesná shoda všech modovaných tvarů ani chůze celou dimenzí ověřená není. Polohy hráčů pro Nether nejsou připojené.
 
 Původní render i samostatný audit všech990párů dokončeny bez chyb. Audit ověřil publikované soubory a stabilní ukazatele, nikoli shodu s živým světem v libovolném pozdějším okamžiku; k tomu slouží průběžné přepočty. Aktualizační interval se počítá od dokončení běhu; běh jedné služby se nepřekrývá sám se sebou. Povrchová a jeskynní fronta mohou běžet současně. Herní server ani Minecraft klient nejsou při této publikaci restartované/spouštěné.
+
+
+## DIM84 — 4. 11. 2026: HOTOVO / VEŘEJNĚ NASAZENO
+
+Oprava 6 055 svislých CrystalTreeLog (metadata 0) je veřejná. Všech 758 uložených chunků v 10 regionových souborech bylo přepočítáno: 161 povrchových dlaždic, 161 kolizních párů a 161 jeskynních párů. Atlas zůstal shodný; pokrytí původní mapy zachováno. Audit všech objektů, hashů a vazeb PASS. Soukromý i veřejný browser: povrch, jeskyně Y48, uzávěry 16/16, návrat na povrch PASS; konzole bez chyb. Veřejná diagnostika: fallback 0, chybějící textura 0, 4 Thaumcraft:blockAiry bez geometrie. Krátké létání ověřeno, úplný regresní test chůze tím není nahrazen.
+
+Nové samostatné 30min fronty DIM84: povrch + kolize + úklid a jeskyně + úklid. Obě enabled/active, první automatické běhy complete=true a exit 0. Ostatních pět rozšířených dimenzí ponecháno na původním runtime. Herní procesy nezměněny; klient nebyl spuštěn.
+
+Celý první přepočet: povrch 231,06 s, kolize 319,66 s, jeskyně 291,91 s, celkem 14,04 min. Po prvním update je 90,44 MiB unikátně alokovaných výstupních souborů (87,68 MiB logicky). Bez katalogu, kódu, zdrojového světa, staré publikace a adresářových metadat. Jde o měření této uložené oblasti, nikoli obecný odhad dalších světů.
+
+ČEKÁ: ověření průhlednosti CrystalStone/Grass, vodorovné varianty kmene, přesná ID v jeskyních. Univerzální import a distribuce zůstávají rozpracované.

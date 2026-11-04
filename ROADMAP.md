@@ -26,3 +26,14 @@
 | 17. Přenositelnost a kapacitní plánování | **INVENTÁŘ A ODHAD GEOMETRIE HOTOVÉ / OVĚŘENÉ; CELEK ROZDĚLANÝ** | Read-only `capacity` spočítá uložené chunky a scénář geometrie z explicitního vzorku. Ověřeno na Windows, Ubuntu a sedmi dalších dimenzích. Zbývá celková disková kapacita včetně kolizí a pracovních dat, časový odhad a test na druhém nezávislém světě a modpacku, více dimenzí se shodnými souřadnicemi bez kolizí, malý benchmark a odhad disku/času před plným renderem. |
 
 Dokončení těchto etap se bude ověřovat skutečným použitím, nikoli jen existencí konfiguračního souboru. Do té doby je repozitář vývojový prototyp. Aktuální orientační výpočty jsou v [KAPACITA.md](KAPACITA.md).
+
+
+## DIM84 — 4. 11. 2026: HOTOVO / VEŘEJNĚ NASAZENO
+
+Oprava 6 055 svislých CrystalTreeLog (metadata 0) je veřejná. Všech 758 uložených chunků v 10 regionových souborech bylo přepočítáno: 161 povrchových dlaždic, 161 kolizních párů a 161 jeskynních párů. Atlas zůstal shodný; pokrytí původní mapy zachováno. Audit všech objektů, hashů a vazeb PASS. Soukromý i veřejný browser: povrch, jeskyně Y48, uzávěry 16/16, návrat na povrch PASS; konzole bez chyb. Veřejná diagnostika: fallback 0, chybějící textura 0, 4 Thaumcraft:blockAiry bez geometrie. Krátké létání ověřeno, úplný regresní test chůze tím není nahrazen.
+
+Nové samostatné 30min fronty DIM84: povrch + kolize + úklid a jeskyně + úklid. Obě enabled/active, první automatické běhy complete=true a exit 0. Ostatních pět rozšířených dimenzí ponecháno na původním runtime. Herní procesy nezměněny; klient nebyl spuštěn.
+
+Celý první přepočet: povrch 231,06 s, kolize 319,66 s, jeskyně 291,91 s, celkem 14,04 min. Po prvním update je 90,44 MiB unikátně alokovaných výstupních souborů (87,68 MiB logicky). Bez katalogu, kódu, zdrojového světa, staré publikace a adresářových metadat. Jde o měření této uložené oblasti, nikoli obecný odhad dalších světů.
+
+ČEKÁ: ověření průhlednosti CrystalStone/Grass, vodorovné varianty kmene, přesná ID v jeskyních. Univerzální import a distribuce zůstávají rozpracované.
